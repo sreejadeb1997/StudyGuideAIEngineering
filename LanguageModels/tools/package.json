@@ -1,0 +1,15 @@
+{
+  "name": "languagemodels-pdf",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Build a single PDF from the LanguageModels markdown notes (KaTeX math + Mermaid diagrams).",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "dependencies": {
+    "katex": "^0.16.11",
+    "markdown-it": "^14.1.0",
+    "markdown-it-texmath": "^1.0.0",
+    "puppeteer": "^23.0.0"
+  }
+}
