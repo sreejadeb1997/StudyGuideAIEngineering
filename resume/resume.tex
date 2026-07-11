@@ -1,0 +1,200 @@
+%-------------------------------------------------------------------------------
+% LaTeX Resume Template
+% Compile with: pdflatex resume.tex  (or use Overleaf)
+%-------------------------------------------------------------------------------
+\documentclass[letterpaper,11pt]{article}
+
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fontawesome5}
+\usepackage[T1]{fontenc}
+\usepackage{latexsym}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{tabularx}
+\input{glyphtounicode}
+
+%---------- Page & Margin Setup ----------
+\usepackage[margin=0.5cm]{geometry}
+\addtolength{\topmargin}{-0.5cm}
+\addtolength{\textheight}{1.0cm}
+
+\urlstyle{same}
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+%---------- Section Formatting ----------
+\titleformat{\section}{
+  \vspace{-4pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+
+% Ensure PDF is machine-readable / ATS-friendly
+\pdfgentounicode=1
+
+%---------- Custom Commands ----------
+\newcommand{\resumeItem}[1]{
+  \item\small{
+    {#1 \vspace{-2pt}}
+  }
+}
+
+\newcommand{\resumeSubheading}[4]{
+  \vspace{-2pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & #2 \\
+      \textit{\small#3} & \textit{\small #4} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubSubheading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \textit{\small#1} & \textit{\small #2} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \small#1 & #2 \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-4pt}}
+
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.15in, label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+%===============================================================================
+\begin{document}
+
+%---------- HEADING ----------
+\begin{center}
+    {\LARGE \scshape \vspace{1pt} Sreeja Deb} \\ \vspace{1pt}
+    \small
+    \faPhone* \ +91-8349605201 \ $|$ \
+    \href{mailto:srde@microsoft.com}{\faEnvelope \ srde@microsoft.com} \ $|$ \
+    \href{https://www.linkedin.com/in/sreeja-deb-887192135/}{\faLinkedin \ linkedin.com/in/sreeja-deb-887192135}
+\end{center}
+
+%---------- SUMMARY ----------
+\section{Summary}
+\small{
+AI Engineer with 7+ years of experience designing \& delivering end-to-end AI and
+data platforms. Skilled across the full spectrum of AI, from traditional machine
+learning (predictive modeling, AutoML, \& MLOps) to the latest generative \& agentic
+AI (LLM-powered agents, RAG, \& Graph-RAG). Strong foundation in large-scale data
+engineering, adept at taking solutions from data modeling \& experimentation to
+scalable, secure production. Passionate about democratizing AI \& drive innovation.
+}
+\vspace{-4pt}
+
+%---------- EDUCATION ----------
+\section{Education}
+\resumeSubHeadingListStart
+
+  \resumeProjectHeading
+    {\textbf{Georgia Institute of Technology} -- M.S. Computer Science (Spec. ML/AI), GPA: 3.9/4.0}{2023 -- 2026}
+  \resumeProjectHeading
+    {\textbf{NIT Bhopal} -- B.Tech Computer Science \& Engineering, CGPA: 8.17/10}{2015 -- 2019}
+  \resumeProjectHeading
+    {\textbf{Kendriya Vidyalaya (CBSE)} -- Class 12\textsuperscript{th}: 95.4\%, Class 10\textsuperscript{th}: 98.6\%}{2004 -- 2015}
+
+\resumeSubHeadingListEnd
+
+%---------- EXPERIENCE ----------
+\section{Experience}
+\resumeSubHeadingListStart
+
+  %-------- Microsoft --------
+  \resumeSubheading
+    {Microsoft}{India}
+    {SDE2 (L62) - Data Engineering/ Data Science / Agentic AI}{2019 -- Present}
+    \resumeItemListStart
+      \resumeItem{\textbf{Account Researcher AI Agent Platform:} Architected a
+        production LLM-powered agent converting natural-language sales queries into grounded
+        insights, using a scalable FastAPI microservice. Engineered an agentic
+        orchestration loop with query decomposition, parallel LLM calls and
+        NL2SQL grounded via RAG over Azure AI Search, driving accuracy with iterative prompt
+        tuning, semantic validation, \& self-correction against business rules. Optimized
+        latency \& token cost via semantic caching, async concurrency, \& SQL connection
+        pooling; hardened with row-level security, \& telemetry tracing.
+        Deployed on Azure \& piloted to 3k+ sellers across Microsoft globally.}
+      \resumeItem{\textbf{Customer Graph-RAG:} Built an end-to-end
+        Graph-RAG platform transforming Microsoft's global enterprise customer data across
+        multiple domains (Account, Opportunity, Customer Health, and Azure Consumed Revenue etc)
+        into a unified knowledge graph that answers natural-language questions with grounded
+        LLM responses and a live subgraph visualization for explainability. Architected a
+        three-stage pipeline: offline graph build using Fabric Graph, in-memory load, and
+        real-time serving via a semantic retrieval engine over Azure OpenAI embeddings.}
+      \resumeItem{\textbf{AutoBrewML:} Created an
+        open-source Microsoft framework that automates the end-to-end machine learning
+        workflow (data prep, model training, \& deployment) on Azure, letting teams build
+        models with 80\% less manual effort \& no prior ML expertise. Published on PyPI
+        (\textasciitilde2{,}000 downloads in the first month), presented as lead speaker at
+        Microsoft's internal Machine Learning, AI \& Data Science (MLADS) conference, and
+        filed a patent for its data-sampling module, later reused by the Microsoft Cloud
+        Data Science team to speed up incident debugging on smaller data samples.}
+      \resumeItem{\textbf{MLOps / AIOps Platform:} Led the design \& build of a unified
+        MLOps \& AIOps platform on Microsoft Fabric that gives teams a standardized, secure
+        way to ship both classical ML models and LLM-powered agents end-to-end, automating
+        model training, versioning, monitoring, deployment, data-drift detection, and
+        retraining for classical ML while operationalizing generative \& agentic AI through
+        prompt/version management, LLM evaluation and guardrails, RAG pipeline
+        orchestration, and continuous quality, latency, cost, and hallucination telemetry.}
+      \resumeItem{\textbf{Predictive Resource Forecasting:} Built a machine learning model
+        that forecasts each consultant's weekly billable hours at 75--80\% accuracy,
+        replacing a manual planning process for Project Managers (whose compensation is tied
+        to planning accuracy); adopted globally after a successful pilot.}
+      \resumeItem{\textbf{Automated Data Tagging:} Built a recommendation engine that
+        automatically assigns business-friendly labels to newly ingested data columns
+        across a large commercial data platform (Sales, Consumption, Marketing, Finance,
+        \& Professional Services), using a hybrid approach combining keyword-frequency
+        (TF-IDF) \& word-embedding techniques to save significant manual engineering effort.}
+      \resumeItem{\textbf{Enterprise Data Warehousing \& BI:} Designed \& maintained multiple
+        large-scale data warehouses \& ETL processes that consolidated data from multiple
+        sources into a single 1M+ user platform, delivering business intelligence and
+        reporting for a multi-million-dollar Microsoft Consulting Services solution.}
+    \resumeItemListEnd
+
+\resumeSubHeadingListEnd
+
+%---------- LEADERSHIP & OUTREACH ----------
+\section{Leadership \& Community Outreach}
+\resumeSubHeadingListStart
+  \item[]
+  \resumeItemListStart
+    \resumeItem{\textbf{Diversity \& Inclusion Lead, Microsoft India:} Drove diversity \& inclusion for the Digital
+      Professional Services org in India, launching a sustainable, non-conventional
+      program alongside senior leadership, HR, \& Legal. Improved D\&I scores in the
+      company-wide employee sentiment (Pulse) survey, with the initiative featured in the
+      India Development Center newsletter for its unique approach.}
+    \resumeItem{Coordinated external outreach programs for underprivileged girls and
+      women with the \textbf{Microsoft India Philanthropy} team \& the \textbf{Women@Microsoft External
+      Outreach} pillar}
+  \resumeItemListEnd
+\resumeSubHeadingListEnd
+
+%---------- SKILLS ----------
+\section{Technical Skills}
+\begin{itemize}[leftmargin=0.15in, label={}]
+  \small{\item{
+    \textbf{Focus Areas:} Machine Learning \& Modelling (MLOps), Generative / Agentic /
+    NLP Solutions (AIOps), RAG \& Graph-RAG, Data Modelling, Database Development,
+    Business Intelligence (BI), Azure Cloud Infrastructure \\ \vspace{2pt}
+    \textbf{Languages \& Frameworks:} Python, SQL, Scala, PyTorch, TensorFlow, Scikit-learn, Pandas, Spark, PySpark \\ \vspace{2pt}
+    \textbf{Platforms \& Tools:} Azure OpenAI, Azure AI Search, Azure Cognitive Services,
+    Microsoft Fabric, Azure Data Factory, Azure Data Lake,
+    Azure Synapse, Azure Databricks, Power BI
+  }}
+\end{itemize}
+
+%===============================================================================
+\end{document}
