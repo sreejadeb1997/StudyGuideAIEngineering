@@ -1,0 +1,249 @@
+# AutoBrewML
+
+> An automated machine learning (AutoML) framework built to democratize AI development while keeping **Responsible AI** and **data quality** at its core.
+
+- **Documentation:** [DeepWiki – AutoBrewML Overview](https://deepwiki.com/microsoft/AutoBrewML/1-overview)
+- **Distribution:** 
+    - **Microsoft Open Source:** [microsoft/AutoBrewML](https://github.com/microsoft/AutoBrewML) 
+    - **PyPI Package:** [PyPi](https://pypi.org/project/AutoBrewML/)
+- **Presented at MLADS:** Presented a session on 'Democratizing Machine Learning' with the demo of AutoBrewML in Machine Learning, AI & Data Science Conference (MLADS) hosted by Microsoft in June'2020 as a speaker.
+### Adoption & Community Metrics
+
+| Platform | Metric | Value |
+| --- | --- | --- |
+| PyPI | ⬇️ Total downloads | ~142,400 |
+| PyPI | ⬇️ Downloads (last 30 days) | ~1,270 |
+| GitHub | ⭐ Stars | 25 |
+| GitHub | 🍴 Forks | 31 |
+| GitHub | 👁️ Watchers | 5 |
+
+> _Metrics as of July 2026; GitHub stats from the [repository](https://github.com/microsoft/AutoBrewML) and PyPI download counts via [pepy.tech](https://pepy.tech/project/AutoBrewML)._
+---
+
+## What Is It?
+
+AutoBrewML is an end-to-end **automated machine learning framework** developed and open-sourced by Microsoft. It automates the full ML lifecycle — from data acquisition, profiling, cleansing, and sampling through automated model training, evaluation, and bias mitigation.
+
+What sets AutoBrewML apart from other AutoML tools is its emphasis on **data quality assurance as a mandatory pre-step to modeling**. Rather than treating data cleaning as an afterthought, the framework enforces multiple preprocessing and validation stages before any model is trained, producing more reliable, production-ready models.
+
+The framework ships with **two interchangeable interfaces** that share the same core functionality:
+
+1. **Notebook Interface** — an Azure Databricks-native implementation using `AMLMasterNotebook` for core functions and `AMLMasterNotebook_Trigger` for orchestration.
+2. **PyPI Package** — a standalone, modular Python package with individual functions plus a `MagicBrewer` function for full end-to-end automation.
+
+---
+
+## Project Highlights
+
+- **Bridges the complexity gap** — Traditional ML requires deep expertise in data engineering, statistics, and modeling. AutoBrewML lowers the barrier so more people can build production-grade ML solutions.
+- **Data quality first** — Most model failures stem from poor data, not poor algorithms. AutoBrewML makes data profiling, sampling, cleansing, and anomaly detection first-class, mandatory steps built into the pipeline.
+- **Automated end-to-end ML pipeline** — from raw data to a deployable, production-ready model.
+- **`MagicBrewer` one-call orchestration** — run the entire pipeline end-to-end with a single function.
+- **Responsible AI by default** — built-in fairness evaluation and disparity mitigation (via Fairlearn) detect and reduce bias *before* models reach production — an increasingly critical requirement for trustworthy AI.
+- **Democratization of AI** — by unifying best-in-class open-source tools (TPOT, Fairlearn, scikit-learn) behind a simplified interface, it makes advanced ML accessible to data scientists and analysts alike.
+- **Dual interface** — Azure Databricks notebooks *and* a standalone PyPI package with equivalent functionality.
+- **Best-in-class integrations** — TPOT (AutoML engine), Fairlearn, scikit-learn, pandas, pyod, imblearn.
+- **Production readiness** — deep, Azure-native integration with Azure Databricks, Azure ML Services, and Power BI supports the journey from experiment to deployment and reporting.
+- **Microsoft Open Source project**, distributed as a **PyPI package**, democratizing usage
+
+---
+
+## Architecture
+
+### Core Framework Architecture
+
+The framework follows a **layered, dual-interface architecture**. A thin presentation/orchestration layer exposes the same underlying capabilities through two entry points — an **interactive notebook interface** (for exploratory, cloud-native workflows) and a **standalone library interface** (for programmatic, embeddable use). Both delegate to a shared **core component layer**, which in turn depends on a **cloud services layer** (compute, model registry, reporting) and an **external library layer** (the open-source engines that do the heavy lifting).
+
+The pipeline treats **data quality as the foundation** for reliable models: raw data flows through a series of preprocessing/validation stages, is routed to the appropriate automated modeling strategy, and is finally passed through a Responsible-AI gate before it can be promoted.
+
+```mermaid
+flowchart TB
+    RAW["Raw Data Input"]
+
+    subgraph DP["Stage 1 — Data Processing"]
+        ACQ["Ingestion & Type Standardization"]
+        PROF["Automated Profiling / EDA"]
+        SAMP["Representative Sampling"]
+        CLEAN["Missing-Value Handling & Encoding"]
+        ANOM["Outlier Detection"]
+        FS["Feature Importance & Selection"]
+        PT["Task-Type Detection"]
+    end
+
+    subgraph ML["Stage 2 — Automated Modeling"]
+        CLF["Classification Search"]
+        REG["Regression Search"]
+        TS["Forecasting Search"]
+    end
+
+    subgraph RAI["Stage 3 — Responsible AI Gate"]
+        FAIR["Fairness / Bias Assessment"]
+        BIAS{"Bias Detected?"}
+        MIT["Bias Mitigation"]
+    end
+
+    PROD["Production-Ready Model"]
+
+    RAW --> ACQ --> PROF --> SAMP --> CLEAN --> ANOM --> FS --> PT
+    PT --> CLF
+    PT --> REG
+    PT --> TS
+    CLF --> FAIR
+    REG --> FAIR
+    TS --> FAIR
+    FAIR --> BIAS
+    BIAS -- "Yes" --> MIT --> PROD
+    BIAS -- "No" --> PROD
+```
+
+### What Each Stage Does (Technical Walkthrough)
+
+The framework is a **sequential pipeline of interchangeable stages**. A key design principle: every stage consumes and returns the same standardized tabular structure (a DataFrame), so stages can be composed freely, swapped, or tested in isolation.
+
+**Stage 1 — Data Processing**
+
+1. **Ingestion & Type Standardization**
+   - Reads the raw tabular source and coerces each column to an explicit, caller-declared type, so every downstream stage works on consistently typed data.
+   - Attaches a stable row identifier (monotonic index) for traceability, and echoes the before/after schema for validation.
+
+2. **Automated Profiling / EDA**
+   - Produces an automated exploratory report: per-column statistics, distributions, correlation structure, missing-value counts, and cardinality.
+   - Output is a self-contained report artifact that informs the cleansing and modeling decisions rather than altering the data.
+
+3. **Cleansing & Encoding** — a multi-step data-quality stage:
+   - **Missing-value policy:** compute the missing ratio per column; **drop columns above a high missing threshold** (e.g., >50%), otherwise impute.
+   - **Type-aware imputation:** central tendency by type — **median** for numeric, **mode** (with neighbor forward/backward fill as fallback) for categorical.
+   - **Categorical normalization:** text cleanup (casing, whitespace), encoding to numeric via either **label encoding** (map each category to a single integer code — compact but implies an ordinal ordering) or **one-hot encoding** (create a separate binary 0/1 column per category — order-free but widens the feature space), and **min–max scaling** to a common range.
+
+4. **Representative Sampling**
+   - Draws a smaller subset that provably resembles the full dataset, so experimentation stays fast without distorting the distribution.
+   - Runs **several candidate strategies in parallel** — simple random, stratified (cluster-guided), systematic (ordered/interval), and oversampling for imbalanced classes (SMOTE-style synthetic minority generation).
+   - Sizes the sample with a **confidence-based formula** (e.g., Slovin's formula) that answers "how many rows are *enough* to represent the whole dataset at a given confidence level":
+     $$n = \frac{N}{1 + N e^{2}}$$
+     where $n$ is the required sample size, $N$ is the total population (number of rows in the full dataset), and $e$ is the acceptable margin of error (e.g., $e = 0.05$ for a 95% confidence level). Intuitively, a larger tolerated error $e$ yields a smaller sample, while a smaller $e$ (tighter confidence) demands more rows; as $N$ grows very large, $n$ plateaus rather than growing linearly — so even huge datasets need only a bounded sample to stay representative. The framework plugs the dataset's row count into this formula to pick a statistically defensible sample size before validating the drawn sample with distribution tests.
+   - **Validates each candidate statistically** — a distributional goodness-of-fit test for numeric columns (Kolmogorov–Smirnov) and a frequency test for categorical columns (Chi-square). A sample is accepted when a majority of columns pass at **p ≥ 0.05**, and the strategy with the strongest agreement is selected. Here the **p-value measures how likely the sample and the full dataset came from the *same* distribution**: the null hypothesis is "sample matches the population," so a **high p-value (≥ 0.05) means there's no significant evidence of a difference** — the sample is representative and is *kept*; a **low p-value (< 0.05) signals the sample's distribution diverges** from the original, so that column fails. Requiring most columns to clear the 0.05 threshold ensures the chosen subset faithfully mirrors the whole.
+
+5. **Anomaly / Outlier Detection**
+   - Flags anomalous records using unsupervised outlier detection so noise does not skew the trained model; flagged rows can be reviewed or removed.
+   - **Unsupervised outlier-detection** means finding abnormal data points *without any labelled examples of "normal" vs. "anomalous"* — the algorithm learns the shape/density of the bulk of the data and scores each row by how far it deviates from that norm, treating the most deviant points as outliers.
+   - **How it's implemented :**
+     - It runs a **suite of `pyod` detectors** side by side rather than a single method: **ABOD** (Angle-Based Outlier Detection), **CBLOF** (Cluster-Based Local Outlier Factor), **HBOS** (Histogram-Based Outlier Score), **Isolation Forest**, **KNN**, and **Average KNN** — each capturing a different notion of "abnormal" (angle, cluster distance, histogram density, random-partition isolation, nearest-neighbour distance).
+     - Every detector is configured with a **`contamination` / `outliers_fraction`** parameter — the analyst's prior estimate of *what proportion of the data is expected to be anomalous* — which sets the cutoff.
+     - Each model is fit, then `decision_function()` produces a **continuous anomaly score** per row and `predict()` assigns a **binary label (1 = outlier, 0 = inlier)**. The score cutoff is derived with `scipy.stats.scoreatpercentile()` at the contamination percentile.
+     - Results are appended back to the dataframe as per-detector outlier-flag and outlier-score columns, and a 2-D **decision-boundary plot** (inliers vs. outliers over a learned contour) is generated for visual inspection. Inlier/outlier counts are reported per detector.
+
+6. **Feature Importance & Selection**
+   - Scores feature relevance with a **tree-based estimator** (a Decision Tree — the *regressor* variant for continuous targets, the *classifier* variant for categorical ones). As the tree splits the data, it tracks how much each feature reduces prediction error/impurity; features that drive the biggest, most useful splits get higher **importance scores**, and the features are then ranked from most to least important. The "impurity" is essentially an entropy-style measure.** For classification, a split's quality is judged by how much it reduces node impurity, quantified via **entropy** (from information theory — how "mixed"/disordered the class labels are) or the closely related **Gini impurity**; the drop in impurity is the **information gain**. For regression the analogue is variance/mean-squared-error reduction. The framework also cross-checks importance with a direct **information-gain (mutual information)** ranking for classification tasks.
+   - Applies **redundancy pruning**: builds a correlation matrix across features and, for any pair that is highly correlated (e.g., >0.9), drops one of them — because two near-identical features add noise and duplicate information without new signal. It also drops near-constant, **zero-variance** columns (same value everywhere) since they carry no discriminating information.
+   - The result is a **ranked, trimmed feature set** — the most informative, non-redundant columns — which speeds up training and often improves model accuracy and interpretability.
+
+7. **Task-Type Detection**
+   - Inspects the target variable to decide the learning task (classification vs. regression vs. forecasting) and routes data to the matching modeling strategy.
+
+**Stage 2 — Automated Modeling**
+
+The modeling core is an **AutoML search engine** that uses evolutionary/genetic search to automatically assemble and tune full model pipelines (algorithm choice + hyperparameters + preprocessing). Data is first split into train/test with a fixed seed for reproducibility, and verbose search logging is suppressed for clean output.
+
+8. **Classification Search** — evolves the best pipeline for categorical targets.
+
+9. **Regression Search** — evolves the best pipeline for continuous targets. Search is governed by tunable knobs such as population size, number of generations, an error-based scoring metric, and repeated k-fold cross-validation. Accuracy is reported with a custom percentage-error metric:
+   $$\text{Accuracy} = 1 - \frac{\sum \big(|y_{actual}| - |y_{pred}|\big)}{\sum y_{actual}}$$
+
+10. **Forecasting Search** — fits and evaluates time-series models to project future values from historical patterns.
+
+**Stage 3 — Responsible AI Gate**
+
+A post-training quality gate built on a **fairness toolkit**, applied before any model is promoted.
+
+11. **Fairness / Bias Assessment**
+    - Slices predictions by a declared **sensitive/protected attribute** and compares **overall vs. group-wise performance** (grouped metric frame) to quantify disparity between groups.
+
+12. **Bias Mitigation**
+    - When disparity exceeds tolerance, applies a **constrained reduction technique** — a fairness constraint (bounding per-group loss) enforced through an iterative reweighting/optimization wrapper around a base estimator — then re-measures group metrics to confirm the disparity dropped before promotion.
+
+**Orchestration & Interfaces**
+
+- **Notebook interface** — a core-function library plus a trigger/orchestrator notebook that chains the stages into a pipeline in a managed cloud environment.
+- **Standalone runner** — a single entry point that executes all of the above stages end-to-end in one call.
+
+---
+
+## Modules & Key Components
+
+### Data Processing Components
+
+| Capability | What It Does | Technical Approach |
+| --- | --- | --- |
+| Data Ingestion | Load data and standardize column types | Typed read + explicit casting, stable row index |
+| Data Profiling | Automated exploratory data analysis (EDA) | Auto-generated statistics, correlations, missing-value report |
+| Data Sampling | Representative subset selection | Multi-strategy sampling + statistical goodness-of-fit validation |
+| Data Cleansing | Missing-value handling and encoding | Threshold-based drop/impute, label encoding, min–max scaling |
+| Anomaly Detection | Outlier identification and handling | Unsupervised outlier detection |
+| Feature Selection | Reduce to the most informative features | Tree-based importance + high-correlation pruning |
+
+### Automated Modeling Components
+
+| Capability | What It Does | Technical Approach |
+| --- | --- | --- |
+| Classification | Supervised classification | Evolutionary AutoML pipeline search |
+| Regression | Supervised regression | Evolutionary AutoML search, CV-scored, custom accuracy metric |
+| Forecasting | Time-series prediction | Historical-pattern forecasting models |
+
+### Responsible AI Components
+
+| Capability | What It Does | Technical Approach |
+| --- | --- | --- |
+| Fairness Evaluation | Detect and quantify bias | Group-wise vs. overall metric comparison on a sensitive attribute |
+| Bias Mitigation | Reduce disparities | Constrained reduction (bounded per-group loss) + re-validation |
+
+### Orchestration
+
+| Interface | Entry Point | Description |
+| --- | --- | --- |
+| Notebook | Core-function library + orchestrator | Interactive, cloud-native pipeline execution |
+| Standalone Library | Single end-to-end runner | One-call, fully automated pipeline |
+
+---
+
+## Interface Options
+
+The framework provides two distinct usage patterns with **equivalent functionality**, targeting different deployment scenarios and user preferences:
+
+1. **Interactive Notebook Interface** — a cloud-native implementation exposing the core functions plus an orchestrator that chains them into a pipeline.
+2. **Standalone Library** — an embeddable package with modular stage functions plus a single runner for end-to-end automation.
+
+---
+
+## Integration Ecosystem
+
+The framework integrates with multiple Azure services and external libraries to deliver comprehensive ML capabilities:
+
+- **Azure Databricks** — Primary compute environment for the notebook interface.
+- **Azure ML Services** — Model management and deployment.
+- **Power BI** — Visualization and reporting integration.
+- **TPOT** — Core automated machine learning engine.
+- **Fairlearn** — Responsible AI and bias mitigation.
+- **External Dependencies** — pandas, scikit-learn, pyod, imblearn, and others.
+
+This approach lets AutoBrewML leverage best-in-class tools while presenting a unified, simplified interface to users.
+
+---
+
+## What Was Achieved
+
+- ✅ **Microsoft Open Source project** — published under the [microsoft](https://github.com/microsoft/AutoBrewML) GitHub organization.
+- ✅ **PyPI package** — distributed as an installable, standalone Python package for broad adoption beyond Azure.
+- ✅ **Presented at Microsoft MLADS** — showcased at Microsoft's internal Machine Learning, AI & Data Science conference.
+- ✅ **End-to-end AutoML** — a complete pipeline from data acquisition to production model.
+- ✅ **Responsible AI integration** — automated fairness evaluation and disparity mitigation baked into the workflow.
+- ✅ **Dual-interface delivery** — Azure Databricks notebooks and a standalone package with parity of features.
+
+---
+
+## References
+
+- [AutoBrewML GitHub Repository](https://github.com/microsoft/AutoBrewML)
+- [DeepWiki: AutoBrewML Overview](https://deepwiki.com/microsoft/AutoBrewML/1-overview)
+- [DeepWiki: Architecture Overview](https://deepwiki.com/microsoft/AutoBrewML/1.1-architecture-overview)
+- [DeepWiki: PyPI Package Interface](https://deepwiki.com/microsoft/AutoBrewML/3-pypi-package-interface)
+- [DeepWiki: Responsible AI](https://deepwiki.com/microsoft/AutoBrewML/6-responsible-ai)
