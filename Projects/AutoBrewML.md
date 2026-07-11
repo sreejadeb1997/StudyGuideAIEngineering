@@ -144,6 +144,8 @@ The framework is a **sequential pipeline of interchangeable stages**. A key desi
 
 The modeling core is an **AutoML search engine** that uses evolutionary/genetic search to automatically assemble and tune full model pipelines (algorithm choice + hyperparameters + preprocessing). Data is first split into train/test with a fixed seed for reproducibility, and verbose search logging is suppressed for clean output.
 
+- **Technology used:** the engine is **TPOT (Tree-based Pipeline Optimization Tool)**, an open-source AutoML library that uses genetic programming over scikit-learn pipelines, with **scikit-learn** providing the underlying estimators, cross-validation (`RepeatedKFold` / `RepeatedStratifiedKFold`), and metrics. In the Azure-native path this runs on **Azure Databricks** (Spark clusters for scalable compute) and is complemented by **Azure Machine Learning Services / Azure Automated ML** for managed model training, tracking, and deployment; trained results and reporting can be surfaced through **Power BI**.
+
 8. **Classification Search** — evolves the best pipeline for categorical targets.
 
 9. **Regression Search** — evolves the best pipeline for continuous targets. Search is governed by tunable knobs such as population size, number of generations, an error-based scoring metric, and repeated k-fold cross-validation. Accuracy is reported with a custom percentage-error metric:
@@ -153,97 +155,23 @@ The modeling core is an **AutoML search engine** that uses evolutionary/genetic 
 
 **Stage 3 — Responsible AI Gate**
 
-A post-training quality gate built on a **fairness toolkit**, applied before any model is promoted.
+A post-training quality gate built on Microsoft's open-source **Fairlearn** toolkit (`fairlearn.metrics`, `fairlearn.reductions`), applied before any model is promoted. It runs as an automated "assess → decide → mitigate → re-assess" loop over a declared sensitive attribute.
 
 11. **Fairness / Bias Assessment**
-    - Slices predictions by a declared **sensitive/protected attribute** and compares **overall vs. group-wise performance** (grouped metric frame) to quantify disparity between groups.
+    - Takes the trained model, the test set, the true labels, and a **declared sensitive/protected feature** (e.g., gender, age band). It generates predictions and computes a **grouped `MetricFrame`** — the chosen metric is measured both **overall** and **per cohort** of the sensitive feature. Classification uses **`accuracy_score`**; regression uses **`mean_absolute_error`**.
+    - This exposes whether the model performs unevenly across groups (e.g., high accuracy for one cohort, low for another).
 
-12. **Bias Mitigation**
-    - When disparity exceeds tolerance, applies a **constrained reduction technique** — a fairness constraint (bounding per-group loss) enforced through an iterative reweighting/optimization wrapper around a base estimator — then re-measures group metrics to confirm the disparity dropped before promotion.
+12. **Bias Decision Logic**
+    - The framework compares the **best vs. worst cohort** accuracy and computes the **relative gap**: $\text{disparity\%} = \dfrac{acc_{max} - acc_{min}}{acc_{max}} \times 100$.
+    - If this gap **exceeds 50%**, the model is flagged as **biased** and mitigation is triggered; otherwise it is deemed "unbiased" and passed through as-is.
+
+13. **Bias Mitigation**
+    - When bias is detected (classification path), it applies Fairlearn's **`ExponentiatedGradient`** reduction — an iterative, cost-reweighting wrapper around a base **`DecisionTreeClassifier`** — subject to a **`DemographicParity`** fairness constraint (which pushes prediction rates to be comparable across cohorts).
+    - The mitigator is re-fit with the sensitive feature supplied, produces **mitigated predictions**, and the grouped `MetricFrame` is recomputed to **confirm the disparity dropped** before the model is returned/promoted.
+    - **In plain terms:** think of it as retraining the model while holding it to a fairness rule. The goal (`DemographicParity`) is simply *"each group should receive positive predictions at roughly the same rate."* To enforce this, the technique (`ExponentiatedGradient`) trains the model over and over in a feedback loop: after each round it checks which group is being treated unfairly, then **increases the "penalty" (weight) on the mistakes for the disadvantaged group** so the next round tries harder to get them right. It keeps nudging these weights up and down until the model is both accurate *and* balanced across groups. The end product is a **re-balanced model** whose predictions no longer favor one cohort — and the framework re-measures the group scores to prove the gap actually shrank before letting the model ship.
 
 **Orchestration & Interfaces**
 
 - **Notebook interface** — a core-function library plus a trigger/orchestrator notebook that chains the stages into a pipeline in a managed cloud environment.
 - **Standalone runner** — a single entry point that executes all of the above stages end-to-end in one call.
 
----
-
-## Modules & Key Components
-
-### Data Processing Components
-
-| Capability | What It Does | Technical Approach |
-| --- | --- | --- |
-| Data Ingestion | Load data and standardize column types | Typed read + explicit casting, stable row index |
-| Data Profiling | Automated exploratory data analysis (EDA) | Auto-generated statistics, correlations, missing-value report |
-| Data Sampling | Representative subset selection | Multi-strategy sampling + statistical goodness-of-fit validation |
-| Data Cleansing | Missing-value handling and encoding | Threshold-based drop/impute, label encoding, min–max scaling |
-| Anomaly Detection | Outlier identification and handling | Unsupervised outlier detection |
-| Feature Selection | Reduce to the most informative features | Tree-based importance + high-correlation pruning |
-
-### Automated Modeling Components
-
-| Capability | What It Does | Technical Approach |
-| --- | --- | --- |
-| Classification | Supervised classification | Evolutionary AutoML pipeline search |
-| Regression | Supervised regression | Evolutionary AutoML search, CV-scored, custom accuracy metric |
-| Forecasting | Time-series prediction | Historical-pattern forecasting models |
-
-### Responsible AI Components
-
-| Capability | What It Does | Technical Approach |
-| --- | --- | --- |
-| Fairness Evaluation | Detect and quantify bias | Group-wise vs. overall metric comparison on a sensitive attribute |
-| Bias Mitigation | Reduce disparities | Constrained reduction (bounded per-group loss) + re-validation |
-
-### Orchestration
-
-| Interface | Entry Point | Description |
-| --- | --- | --- |
-| Notebook | Core-function library + orchestrator | Interactive, cloud-native pipeline execution |
-| Standalone Library | Single end-to-end runner | One-call, fully automated pipeline |
-
----
-
-## Interface Options
-
-The framework provides two distinct usage patterns with **equivalent functionality**, targeting different deployment scenarios and user preferences:
-
-1. **Interactive Notebook Interface** — a cloud-native implementation exposing the core functions plus an orchestrator that chains them into a pipeline.
-2. **Standalone Library** — an embeddable package with modular stage functions plus a single runner for end-to-end automation.
-
----
-
-## Integration Ecosystem
-
-The framework integrates with multiple Azure services and external libraries to deliver comprehensive ML capabilities:
-
-- **Azure Databricks** — Primary compute environment for the notebook interface.
-- **Azure ML Services** — Model management and deployment.
-- **Power BI** — Visualization and reporting integration.
-- **TPOT** — Core automated machine learning engine.
-- **Fairlearn** — Responsible AI and bias mitigation.
-- **External Dependencies** — pandas, scikit-learn, pyod, imblearn, and others.
-
-This approach lets AutoBrewML leverage best-in-class tools while presenting a unified, simplified interface to users.
-
----
-
-## What Was Achieved
-
-- ✅ **Microsoft Open Source project** — published under the [microsoft](https://github.com/microsoft/AutoBrewML) GitHub organization.
-- ✅ **PyPI package** — distributed as an installable, standalone Python package for broad adoption beyond Azure.
-- ✅ **Presented at Microsoft MLADS** — showcased at Microsoft's internal Machine Learning, AI & Data Science conference.
-- ✅ **End-to-end AutoML** — a complete pipeline from data acquisition to production model.
-- ✅ **Responsible AI integration** — automated fairness evaluation and disparity mitigation baked into the workflow.
-- ✅ **Dual-interface delivery** — Azure Databricks notebooks and a standalone package with parity of features.
-
----
-
-## References
-
-- [AutoBrewML GitHub Repository](https://github.com/microsoft/AutoBrewML)
-- [DeepWiki: AutoBrewML Overview](https://deepwiki.com/microsoft/AutoBrewML/1-overview)
-- [DeepWiki: Architecture Overview](https://deepwiki.com/microsoft/AutoBrewML/1.1-architecture-overview)
-- [DeepWiki: PyPI Package Interface](https://deepwiki.com/microsoft/AutoBrewML/3-pypi-package-interface)
-- [DeepWiki: Responsible AI](https://deepwiki.com/microsoft/AutoBrewML/6-responsible-ai)
