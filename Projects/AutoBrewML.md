@@ -178,3 +178,15 @@ A post-training quality gate built on Microsoft's open-source **Fairlearn** tool
 - **Notebook interface** — a core-function library plus a trigger/orchestrator notebook that chains the stages into a pipeline in a managed cloud environment.
 - **Standalone runner** — a single entry point that executes all of the above stages end-to-end in one call.
 
+---
+
+## Technology Stack
+
+- **Language:** Python
+- **AutoML engine:** TPOT (genetic-programming pipeline search)
+- **Responsible AI:** Fairlearn (`fairlearn.metrics`, `fairlearn.reductions`)
+- **ML / data libraries:** scikit-learn, pandas, numpy, scipy, imblearn (SMOTE / SMOTE-NC), pyod (anomaly detection), pandas-profiling (EDA)
+- **Compute / cloud:** Azure Databricks (Spark clusters), Azure Machine Learning Services / Azure Automated ML
+- **Visualization & reporting:** Power BI
+- **Distribution:** PyPI package + Azure Databricks notebooks (dual interface)
+

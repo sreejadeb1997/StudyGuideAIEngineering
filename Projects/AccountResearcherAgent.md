@@ -261,3 +261,18 @@ flowchart LR
 | Ground-Truth & Format Scoring | Validate correctness & format | Embedding-based semantic similarity vs ground truth, metric lists, key pointers |
 | Scheduled Runs & Load/Burst Testing | Continuous QA + load testing | Daily cadence + burst fires, rolling scorecard (latency, failure %, match %) |
 | Automated Alerting | Notify stakeholders on degradation | Threshold-breach detection → downtime/failure notifications |
+
+---
+
+## Technology Stack
+
+- **Language / Framework:** Python, FastAPI (async)
+- **Serving:** gunicorn + Uvicorn workers on Azure App Service (Linux)
+- **LLM:** Azure OpenAI (GPT-class chat models) — NL→SQL / NL→DAX generation, rephrasing, routing, query splitter, follow-up prompts recommendation, summarization
+- **Data:** Azure SQL Hyperscale (relational), semantic / analytical models (DAX)
+- **Data access:** `pyodbc` + ODBC Driver 18, AAD-token connection attribute, pooled connections
+- **Identity:** `azure-identity` (`DefaultAzureCredential`), Managed Identity, per-scope token cache
+- **Resilience & traffic:** Azure Front Door + API Management (geo-redundant BCDR)
+- **Evaluation:** LLM-as-judge, embedding-based semantic similarity, scheduled A/B + load testing in bust fire mode
+- **Observability:** Application Insights telemetry
+- **Delivery:** CI/CD pipelines, infrastructure-as-config app settings
