@@ -7,6 +7,9 @@
     - **Microsoft Open Source:** [microsoft/AutoBrewML](https://github.com/microsoft/AutoBrewML) 
     - **PyPI Package:** [PyPi](https://pypi.org/project/AutoBrewML/)
 - **Presented at MLADS:** Presented a session on 'Democratizing Machine Learning' with the demo of AutoBrewML in Machine Learning, AI & Data Science Conference (MLADS) hosted by Microsoft in June'2020 as a speaker.
+- **Presented for Patent:** *"Get representative subset of data to simulate complex processes & increase model accuracy,Quantitative analysis for all the samples & suggests best which is statistically closest to the original data"*
+- **Cross-team adoption:** Co-developed with the **MCDS (Microsoft Cloud Data Science)** team to onboard AutoBrewML into their incident-management (ICM) workflow — applying the framework's automated data-quality and modeling pipeline to accelerate and improve **incident (ICM) resolution**.
+
 ### Adoption & Community Metrics
 
 | Platform | Metric | Value |
