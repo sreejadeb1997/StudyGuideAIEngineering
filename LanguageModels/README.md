@@ -27,6 +27,7 @@ structure so you can build a clear mental model:
 | 8 | [Beyond](09-beyond.md) | Scaling, T5, instruction tuning, RLHF, modern LLMs |
 | 10 | [Understanding Foundation Models](10-foundation-models.md) | Training data, modeling, post-training, sampling (Chip Huyen, Ch. 2) |
 | 11 | [Evaluation Methodology](11-evaluation-methodology.md) | Perplexity, exact/similarity eval, AI-as-a-judge, comparative ranking (Chip Huyen, Ch. 3) |
+| 12 | [Evaluate AI Systems](12-evaluate-ai-systems.md) | Evaluation criteria, model selection, public benchmarks, evaluation pipelines (Chip Huyen, Ch. 4) |
 
 ## The one-picture summary
 
