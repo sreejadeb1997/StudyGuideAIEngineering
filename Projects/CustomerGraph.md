@@ -32,7 +32,7 @@ This **build-once / serve-many** split means the expensive graph + embedding con
 - **Explainability of the agentic response via subgraph rendering** — the LLM only sees the retrieved subgraph; the exact nodes/edges that informed each answer are returned and **visualized**, making the reasoning transparent and auditable.
 - **Live visual feedback** — the graph pane redraws the retrieved subgraph on every question, turning an opaque RAG call into an inspectable picture.
 - **Build-once, serve-many** — heavyweight graph + embedding construction is offline; the runtime loads cached artifacts and answers in O(retrieval) time.
-- **Passwordless & cloud-native** — all data, embedding, and LLM access uses Managed Identity; artifacts live in a governed lakehouse.
+- **Cloud-native** — all data, embedding, and LLM access uses Managed Identity; artifacts live in a governed lakehouse.
 
 ---
 
@@ -183,37 +183,6 @@ flowchart TB
 | Graph Pane | Visualize graph + subgraph | React renderer, per-query re-render |
 | Chat Panel | Drive Q&A | POST query, render answer + telemetry |
 
----
-
-## Engineering Highlights
-
-- **True GraphRAG** — retrieval returns a *connected subgraph*, enabling relational reasoning beyond flat-chunk RAG.
-- **Embedding-space alignment** — nodes and queries share one embedding model, so cosine similarity is a single dot product against a pre-normalized matrix (fast, exact).
-- **Hub-blocking traversal** — high-degree shared nodes are visible but non-traversable, the core mechanism that keeps subgraphs relevant and bounded.
-- **Context-window budgeting** — deterministic ranking + caps guarantee the LLM prompt stays within limits, with honest "ranked-sample" disclosure when truncated.
-- **Graceful degradation** — missing/failed embeddings automatically fall back to a robust keyword retriever; storage failures on subgraph persistence never break a request.
-- **Build-once / serve-many** — offline construction + cached runtime load keeps per-query latency low and cost predictable.
-- **Full telemetry** — every response carries retrieval mode, matched terms, node/edge counts, and per-stage timings (retrieve / LLM / total).
-- **Dual interface** — the same embed → retrieve → answer path is exposed via both HTTP API and a CLI.
-
----
-
-## Security & Governance
-
-- **Passwordless everywhere** — relational source, lakehouse, embeddings, and chat model are all accessed via **Managed Identity / Entra tokens**; no secrets in code.
-- **Governed artifact store** — graph, embeddings, and per-query subgraphs persist to a governed data lakehouse for lineage and replay.
-- **Explainable retrieval** — the exact subgraph feeding each answer is returned and visualized, supporting auditability.
-
----
-
-## Interface Options
-
-| Interface | Entry Point | Description |
-| --- | --- | --- |
-| Web UI | React app + `GET /api/graph`, `POST /api/ask` | Side-by-side graph + chat, per-query subgraph render |
-| CLI | Terminal driver | Same embed → retrieve → answer pipeline offline |
-
----
 
 ## Technology Stack
 
@@ -225,13 +194,3 @@ flowchart TB
 - **Identity:** `azure-identity` (`DefaultAzureCredential`), Managed Identity
 - **Data access:** `pyodbc` + Entra-token connection for the relational source
 
----
-
-## What Was Achieved
-
-- ✅ **GraphRAG over enterprise data** — relational data transformed into a queryable, embedded knowledge graph.
-- ✅ **Semantic subgraph retrieval** — meaning-based node retrieval with bounded, hub-blocked multi-hop expansion.
-- ✅ **Context-safe, grounded answers** — budgeted subgraphs keep the LLM within limits and answers explainable.
-- ✅ **Live visual explainability** — the retrieved subgraph is rendered per question alongside the answer.
-- ✅ **Build-once / serve-many architecture** — offline construction + cached runtime for low-latency serving.
-- ✅ **Passwordless, governed, cloud-native** — Managed-Identity auth end to end with lakehouse-backed artifacts.
