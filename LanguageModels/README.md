@@ -28,6 +28,12 @@ structure so you can build a clear mental model:
 | 10 | [Understanding Foundation Models](10-foundation-models.md) | Training data, modeling, post-training, sampling (Chip Huyen, Ch. 2) |
 | 11 | [Evaluation Methodology](11-evaluation-methodology.md) | Perplexity, exact/similarity eval, AI-as-a-judge, comparative ranking (Chip Huyen, Ch. 3) |
 | 12 | [Evaluate AI Systems](12-evaluate-ai-systems.md) | Evaluation criteria, model selection, public benchmarks, evaluation pipelines (Chip Huyen, Ch. 4) |
+| 13 | [Prompt Engineering](13-prompt-engineering.md) | In-context learning, best practices, chain-of-thought, defensive prompting (Chip Huyen, Ch. 5) |
+| 14 | [RAG and Agents](14-rag-and-agents.md) | Retrieval algorithms, chunking/reranking, tools, planning, memory (Chip Huyen, Ch. 6) |
+| 15 | [Finetuning](15-finetuning.md) | When to finetune, PEFT, LoRA/QLoRA, model merging, memory math (Chip Huyen, Ch. 7) |
+| 16 | [Dataset Engineering](16-dataset-engineering.md) | Data curation, quantity, synthetic data, processing pipeline (Chip Huyen, Ch. 8) |
+| 17 | [Inference Optimization](17-inference-optimization.md) | Latency/throughput/cost, quantization, batching, KV cache (Chip Huyen, Ch. 9) |
+| 18 | [Architecture & User Feedback](18-architecture-user-feedback.md) | System architecture, guardrails, routing, caching, feedback loop (Chip Huyen, Ch. 10) |
 
 ## The one-picture summary
 

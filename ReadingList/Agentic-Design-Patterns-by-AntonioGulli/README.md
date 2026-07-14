@@ -2,14 +2,12 @@
 
 [![Book](https://img.shields.io/badge/Book-Pre--order-blue)](https://www.amazon.com/Agentic-Design-Patterns-Hands-Intelligent/dp/3032014018/)
 [![Author](https://img.shields.io/badge/Author-Antonio%20Gulli-green)](https://www.linkedin.com/in/searchguy/)
-[![Charity](https://img.shields.io/badge/Royalties-Save%20the%20Children-red)](https://www.savethechildren.org/)
 [![License](https://img.shields.io/badge/License-Educational-yellow)]()
 
 ## 📖 About This Repository
 
 This repository contains the complete materials for **"Agentic Design Patterns: A Hands-On Guide to Building Intelligent Systems"** by Antonio Gulli. It includes all chapters in PDF format and accompanying code notebooks for hands-on learning.
 
-> **Note**: All author royalties are donated to Save the Children 💝
 
 ## 🎯 What You'll Learn
 
