@@ -218,4 +218,47 @@ whether for the next word or for attention.
 The next big leap is a network that reads a sequence **one token at a time** and keeps a
 **memory** of everything seen so far. That is the Recurrent Neural Network.
 
+---
+
+## 0.7 The one-page recap
+
+```mermaid
+graph LR
+    NG["n-gram<br/>count tables"] -->|"replace counts<br/>with a network"| FF["FF-NNLM<br/>fixed window + embeddings"]
+    FF -->|"reusable, higher-quality<br/>word vectors"| W2V["Word2Vec / GloVe<br/>static embeddings"]
+    W2V -->|"need arbitrary-length,<br/>ordered memory"| RNN["→ RNN"]
+```
+
+**What a language model is.** A machine that assigns probability to a sequence — equivalently,
+predicts the next word from context. Everything factorizes via the chain rule, and a good
+estimator of $P(w_t \mid \text{context})$ can **score**, **generate**, and **represent** meaning:
+
+$$P(w_1, \dots, w_T) = \prod_{t=1}^{T} P(w_t \mid w_1, \dots, w_{t-1})$$
+
+| Method | How it models $P(w_t \mid \text{context})$ | What it fixed | What it still can't do |
+|--------|--------------------------------------------|---------------|------------------------|
+| **n-gram** | **Markov assumption** + corpus counts $\frac{\text{count}(w_{t-1},w_t)}{\text{count}(w_{t-1})}$ | First practical LM | Fixed tiny context · sparsity (zeros) · no similarity · $V^n$ table growth |
+| **FF-NNLM** (Bengio 2003) | Embed previous $n{-}1$ words → concat → $\tanh(Wx+b)$ → softmax | Dense **embeddings** → "cat"≈"dog"; kills sparsity | Context is still a **fixed window** |
+| **Word2Vec** (2013) | Shallow net: **CBOW** (word from neighbours) / **Skip-gram** (neighbours from word) | Reusable vectors; $\text{king}-\text{man}+\text{woman}\approx\text{queen}$ | Vectors are **static** — one per word |
+| **GloVe** (2014) | Factorize a global co-occurrence matrix | Same reusable-vector goal, global stats | Static; no context sensitivity |
+
+**Activation functions** (the non-linearities used everywhere):
+
+| Function | Range | Where used | Weakness |
+|----------|-------|-----------|----------|
+| **Sigmoid** $\frac{1}{1+e^{-x}}$ | $(0,1)$ | LSTM/GRU gates; binary output | Saturates → vanishing gradient |
+| **Tanh** | $(-1,1)$ | RNN/LSTM hidden state & candidates | Zero-centred but still saturates |
+| **ReLU** $\max(0,x)$ | $[0,\infty)$ | Transformer FFN | "Dying ReLU" |
+| **GELU** $x\Phi(x)$ | $\approx[-0.17,\infty)$ | BERT/GPT FFN | — |
+| **Softmax** | sums to 1 | Next-word layer; attention weights | Exaggerates largest logit (→ temperature) |
+
+**Scoreboard entering the neural era:** only **word similarity** is solved; **arbitrary-length
+context** and **contextual** meaning (one "bank" vector for both senses) are still open.
+
+**The single thread → next step:** every method is a better estimator of
+$P(w_t \mid \text{context})$. The next leap reads a sequence **one token at a time** and keeps an
+**arbitrary-length memory** — the RNN.
+
+---
+
 ➡️ Continue to [Chapter 1 — RNN](02-rnn.md)

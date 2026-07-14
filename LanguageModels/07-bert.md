@@ -173,4 +173,43 @@ task-specific fine-tuning at all**.
 
 That model family is **GPT**.
 
+---
+
+## 6.9 The one-page recap
+
+```mermaid
+graph LR
+    P["Pre-train once<br/>MLM + NSP on huge text"] --> FT1["Fine-tune: sentiment"]
+    P --> FT2["Fine-tune: QA"]
+    P --> FT3["Fine-tune: NER"]
+```
+
+**Core idea.** A stack of Transformer **encoders** (decoder discarded) pre-trained to produce
+**deeply bidirectional, contextual** representations for **understanding** — not generation.
+(BERT-Base: 12 layers / 110M; BERT-Large: 24 layers / 340M.)
+
+| Aspect | Detail |
+|--------|--------|
+| **Why bidirectional** | "bank" needs *both* sides ("withdraw money"); encoder self-attention is **unmasked** |
+| **Input = 3 embeddings** | Token (WordPiece) + Segment (A/B) + Position (learned) |
+| **Special tokens** | `[CLS]` (aggregate for classification) · `[SEP]` (separator) · `[MASK]` |
+| **MLM** | Mask **15%** and predict them; of those → **80%** `[MASK]`, **10%** random, **10%** unchanged; loss on masked positions only |
+| **NSP** | Does sentence B follow A? (50/50) via `[CLS]` — later found unnecessary (RoBERTa) |
+| **Paradigm** | **Pre-train once** expensively, then **fine-tune** cheaply with a small task head |
+
+**Task heads:** `[CLS]` → single/pair classification · per-token vectors → NER · start/end span →
+QA (SQuAD). One pre-trained model reaches SOTA across tasks with just a light head.
+
+| Limitation | Detail |
+|------------|--------|
+| **Can't generate** | Fills blanks, not fluent left-to-right text |
+| **Train/inference mismatch** | `[MASK]` never appears at fine-tune/inference time |
+| **Sample-inefficient** | Only 15% of tokens give a learning signal |
+| **$O(n^2)$, 512-token cap** · **needs fine-tuning per task** | No zero-shot instruction following |
+
+**The contrast:** BERT optimizes the encoder for understanding; its sibling optimizes the
+**decoder** for generation and scales it into a prompt-driven model → GPT.
+
+---
+
 ➡️ Continue to [Chapter 7 — GPT](08-gpt.md)

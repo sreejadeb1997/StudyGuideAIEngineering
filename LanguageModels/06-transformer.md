@@ -285,4 +285,57 @@ masking choice from §5.9:
 - Use only the **decoder** with causal masking, trained to predict the next word →
   **GPT** (great for *generation*).
 
+---
+
+## 5.13 The one-page recap
+
+```mermaid
+graph LR
+    IN["tokens + positional encoding"] --> ENC["Encoder ×N<br/>self-attention + FFN<br/>(parallel, bidirectional)"]
+    ENC --> CTX["context vectors"]
+    CTX --> DEC["Decoder ×N<br/>masked self-attn +<br/>cross-attn + FFN"]
+    DEC --> LS["linear + softmax"]
+    LS --> OUT["next token"]
+```
+
+**Core idea.** Build the whole model from **(self-)attention + feedforward**, no recurrence. All
+tokens are processed **in parallel**, and any two are connected in **one step** (path length $O(1)$).
+The attention engine:
+
+$$\text{Attention}(Q,K,V) = \text{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right)V$$
+
+| Component | Role |
+|-----------|------|
+| **Positional encoding** | Sinusoids added to embeddings — injects order (no recurrence) |
+| **Scaled dot-product attn** | $QK^\top$ scores → $/\sqrt{d_k}$ stabilize → softmax → weight $V$ |
+| **Multi-head** | $h$ parallel heads (orig. 8) learn different relations; concat → $W^O$ |
+| **Feedforward (FFN)** | Per-token 2-layer MLP, ~4× inner dim, ReLU |
+| **Residual + LayerNorm** | $\text{LayerNorm}(x + \text{Sublayer}(x))$ — lets deep stacks train |
+
+**Three kinds of attention** (mask choice is everything):
+
+| Location | Q from | K/V from | Masked? |
+|----------|--------|----------|---------|
+| Encoder self | encoder | encoder | No (bidirectional) |
+| Decoder self | decoder | decoder | **Yes** (causal) |
+| Cross | decoder | encoder | No |
+
+The **causal mask** sets future scores to $-\infty$ before softmax: $\text{mask}_{ij} = 0$ if
+$j\le i$, else $-\infty$.
+
+**Data flow:** tokenize → embed + position → encoder (parallel, bidirectional) → context vectors
+→ decoder (masked self + cross + FFN) → linear + softmax → next token. Training uses **teacher
+forcing** + the mask to score a whole sentence in **one pass** (why it trains far faster than RNNs).
+
+| Limitation | Detail |
+|------------|--------|
+| **Quadratic cost** | Self-attention is $O(n^2)$ in sequence length |
+| **No inherent order** | Position must be injected artificially |
+| **Data/compute hungry** · **fixed window** | Needs scale; capped context length |
+
+**The bridge:** the **mask choice** splits the family — **no mask → BERT** (understanding),
+**causal mask → GPT** (generation).
+
+---
+
 ➡️ Continue to [Chapter 6 — BERT](07-bert.md)  ·  then [Chapter 7 — GPT](08-gpt.md)

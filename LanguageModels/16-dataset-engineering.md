@@ -146,7 +146,55 @@ graph LR
 
 ---
 
-## 16.6 Compact glossary
+## 16.6 The one-page recap
+
+```mermaid
+graph LR
+    C["Curate<br/>quality · coverage · quantity"] --> G["Generate / acquire<br/>human + synthetic"]
+    G --> P["Process<br/>inspect → dedup → clean/filter → format"]
+    P --> D["Training-ready dataset"]
+```
+
+**Thesis:** as models and algorithms commoditize, **data is the differentiator** — treat it as an
+**engineered artifact** and iterate on it as deliberately as on the model.
+
+**Curation — good data (priority order):**
+
+| Property | Question |
+|----------|----------|
+| **Quality** (#1) | Correct, relevant, consistent, complete, compliant/safe |
+| **Coverage / diversity** | Spans the inputs (topics, styles, edge cases) the model will face |
+| **Quantity** | Enough for the technique |
+
+**Quality over quantity** — **LIMA** ("Less Is More for Alignment"): ~1,000 curated examples make a
+strong instruction model.
+
+**How much:** full finetuning ≫ PEFT; instruction tuning = **thousands**; continued pre-training =
+**large** corpora. Plot a **size-vs-performance** curve on a small scale before collecting more.
+
+**Generation & acquisition:**
+
+| Source | Detail |
+|--------|--------|
+| **Human** | Gold standard; needs guidelines + **inter-annotator agreement**; slow, costly |
+| **Synthetic (AI)** | Cheap, scalable — augmentation, **instruction gen** (Self-Instruct / Evol-Instruct), **distillation** (teacher→student) |
+
+**Verify synthetic data** (AI judges, functional checks, human spot-checks). Two cautions:
+**licensing** (data lineage — many licenses forbid training on outputs) and **model collapse**
+(quality/diversity drift) → mix synthetic with real. AI can also **curate** (score, dedup,
+classify, flag PII/toxicity).
+
+**Processing pipeline:** **inspect** (look first) → **deduplicate** (exact/fuzzy/semantic — avoid
+bias & test-set leakage) → **clean & filter** (quality, toxicity, **PII**) → **format** to the exact
+chat template/schema. *Garbage in, garbage out — amplified* on small finetuning sets, so cleaning
+is often the highest-leverage step.
+
+**Through-line:** you decide what the data should look like, acquire it, and verify it — data work,
+not a fancier algorithm, usually moves the needle.
+
+---
+
+## 16.7 Compact glossary
 
 - **Dataset engineering** — deliberately designing, creating, and curating training data.
 - **Data curation** — selecting what to train on, judged by quality, coverage, quantity.

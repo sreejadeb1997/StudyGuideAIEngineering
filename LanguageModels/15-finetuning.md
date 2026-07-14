@@ -184,7 +184,55 @@ graph LR
 
 ---
 
-## 15.8 Compact glossary
+## 15.8 The one-page recap
+
+```mermaid
+graph LR
+    P["Prompt engineering"] -->|"not enough"| R["RAG / tools"]
+    R -->|"still not enough"| F["Finetune (PEFT / LoRA)"]
+    F --> M["Adapted model<br/>(new behavior baked in)"]
+```
+
+**Core trade-off.** Prompting changes the *input*; finetuning changes the *model* — more powerful
+but needs data, compute, ML expertise, and hosting. **Try it last.**
+
+| When to finetune | When NOT to |
+|------------------|-------------|
+| Quality/domain skill, format/behavior, efficiency (small model ↑), bias/safety | Prompting/RAG are cheaper & faster; risk of **catastrophic forgetting**; data + infra + hosting burden |
+
+**RAG vs finetune heuristic:** **RAG** for missing *knowledge*, **finetuning** for missing
+*behavior/skill/format* — complementary (do both). Try RAG first (updates instantly).
+
+**Stages you can finetune:** continued pre-training (domain text) · **SFT** (input→output pairs) ·
+**preference** (RLHF / DPO) · long-context. Starting from an instruction-tuned base is easier.
+
+**Why it's expensive — memory math:** need weights + **gradients** + **optimizer states** (Adam:
+2 extra values/param) + activations ≈ **3–4× the weights**. Precision: FP32=4B, FP16/BF16=2B,
+INT8=1B, INT4=0.5B → **quantization** shrinks all of these.
+
+**PEFT** — train a small subset, freeze the base:
+
+| Method | Idea |
+|--------|------|
+| **LoRA** | Freeze $W$, learn low-rank $W' = W + \frac{\alpha}{r}BA$ (**<1%** of params) |
+| **QLoRA** | LoRA on a **4-bit** quantized base → finetune huge models on one GPU |
+| **Soft prompts / prefix tuning** | Learn virtual-token vectors instead of editing weights |
+
+LoRA wins: tiny footprint, cheap **swappable** adapters (multi-tenant serving), and **no inference
+latency** (mergeable back into $W$). Rank $r\approx$ 8–64, usually on attention projections.
+
+**Model merging / task vectors:** weight averaging, **task arithmetic** (finetuned − base = a skill
+direction), layer stacking — compose or remove skills without retraining.
+
+**Workflow:** define task/metrics → curate data (Mod 16) → pick base + method → hyperparameters
+(**LR** most important; epochs → overfitting; batch size; LoRA rank) → train → evaluate → iterate.
+Start small; **data quality beats quantity**.
+
+**Through-line:** try it last; RAG for knowledge, finetuning for behavior; PEFT makes it affordable.
+
+---
+
+## 15.9 Compact glossary
 
 - **Finetuning** — continuing to train a pre-trained model on your data to change its weights.
 - **Transfer learning** — reusing knowledge from pre-training for a new task.

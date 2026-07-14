@@ -260,4 +260,47 @@ flow across many steps **without being repeatedly squashed**. The key insight: a
 protected memory channel and use learnable **gates** to control what is remembered,
 forgotten, and output. That redesign is the **Long Short-Term Memory (LSTM)** cell.
 
+---
+
+## 1.8 The one-page recap
+
+```mermaid
+graph LR
+    x["xₜ (input)"] --> cell["hₜ = tanh(W_hh·hₜ₋₁ + W_xh·xₜ)"]
+    hprev["hₜ₋₁ (memory)"] --> cell
+    cell --> y["ŷₜ = softmax(W_hy·hₜ)"]
+    cell -->|"carried forward"| hprev
+```
+
+**Core idea.** A **hidden state** carries memory across a sequence: $h_t = f(h_{t-1}, x_t)$. The
+same weights are reused every step, so it handles **any length** and naturally encodes **order**.
+
+**Forward pass (per step):**
+
+$$h_t = \tanh(W_{hh}h_{t-1} + W_{xh}x_t + b_h), \qquad \hat{y}_t = \text{softmax}(W_{hy}h_t + b_y)$$
+
+| Aspect | Detail |
+|--------|--------|
+| **Why it appeared** | Fixes the FF-NNLM's **fixed window** — arbitrary context, order, parameter sharing |
+| **Components** | $x_t$ input · $h_t$ memory · $W_{xh}, W_{hh}, W_{hy}$ weights · $\tanh$ nonlinearity |
+| **Loss** | Cross-entropy $L = -\sum_t \log \hat{y}_t[w_{t+1}]$ — punishes confident wrong answers |
+| **Training** | **BPTT**: unroll, backprop; softmax-CE gradient is $\hat{y}_t - y_t$; shared-weight gradients are **summed across steps** |
+| **Generation** | Sample from $\hat{y}_t$, feed back as $x_{t+1}$, repeat |
+
+**The fatal flaw.** Backprop multiplies $\prod_i \frac{\partial h_i}{\partial h_{i-1}}$ through
+$W_{hh}$ and $\tanh'$ repeatedly:
+
+| Case | Result |
+|------|--------|
+| terms **< 1** | gradient **vanishes** → can't learn long-range deps; memory only ~5–10 steps |
+| terms **> 1** | gradient **explodes** → unstable (gradient clipping patches this) |
+
+Plus two more: it is strictly **sequential** (no parallelism across time), and all history is
+crushed into one **fixed-size** vector (single-state bottleneck).
+
+**The bridge:** keep recurrence, but protect memory with an additive **cell state** and learnable
+**gates** so gradients survive across many steps → the LSTM.
+
+---
+
 ➡️ Continue to [Chapter 2 — LSTM & GRU](03-lstm-gru.md)

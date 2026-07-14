@@ -193,7 +193,57 @@ the savings.
 
 ---
 
-## 17.8 Compact glossary
+## 17.8 The one-page recap
+
+```mermaid
+graph LR
+    M["Metrics<br/>TTFT · TPOT · throughput · goodput"] --> ML["Model-level<br/>quantize · distill · efficient attention"]
+    ML --> DC["Decoding<br/>speculative · constrained"]
+    DC --> SL["Service-level<br/>batching · KV cache · parallelism"]
+    SL --> R["Fast, cheap, scalable"]
+```
+
+**The trilemma:** low latency ↔ high throughput ↔ low cost pull against each other.
+
+**Bottleneck first** — know what limits you:
+
+| Phase | Bottleneck |
+|-------|-----------|
+| **Prefill** (process prompt in parallel) | **Compute-bound** |
+| **Decode** (one token at a time) | **Memory-bound** ← biggest wins **reduce data movement** |
+
+| Metric | Meaning |
+|--------|---------|
+| **TTFT** | Time to first token (perceived responsiveness) |
+| **TPOT / ITL** | Time per output token (streaming smoothness) |
+| **Throughput** | Tokens/sec overall (cost efficiency) |
+| **Goodput** | Throughput **meeting latency SLOs** ← what actually matters |
+| **MFU / utilization** | Fraction of peak hardware used |
+
+**Model-level:** **quantization** (FP16→INT8→INT4; PTQ, GPTQ, AWQ — highest leverage) ·
+**distillation** · pruning/sparsity · efficient attention (**FlashAttention**) · **MQA / GQA**
+(smaller KV cache, faster decode).
+
+**Decoding (same output, faster):** **speculative decoding** (small draft model proposes tokens,
+big model **verifies in parallel**) · parallel/lookahead/Medusa · constrained/structured decoding.
+
+**Service-level (no quality change):**
+
+| Lever | Detail |
+|-------|--------|
+| **Batching** | static → dynamic → **continuous (in-flight)** = the LLM-serving standard |
+| **KV cache** | store past key/value tensors; **PagedAttention** (vLLM) · **prefix caching** (shared prompt) |
+| **Parallelism** | **tensor** (split layers/matrices) · **pipeline** (layers across GPUs) · data/replica |
+
+Real deployments **stack** these (quantized + GQA + continuous batching + paged/prefix KV +
+speculative decoding), each layer compounding the savings.
+
+**Through-line:** navigate the latency ↔ throughput ↔ cost frontier for *your* SLOs; **goodput**
+(throughput meeting latency targets) is the real objective.
+
+---
+
+## 17.9 Compact glossary
 
 - **Compute-bound vs memory-bound** — limited by arithmetic (FLOPs) vs by data movement
   (bandwidth).

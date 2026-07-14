@@ -360,7 +360,59 @@ graph TB
 
 ---
 
-## 11.7 Compact glossary
+## 11.7 The one-page recap
+
+```mermaid
+graph LR
+    PPL["Language-model metrics<br/>perplexity / cross-entropy"] --> EX["Exact eval<br/>functional + similarity"]
+    EX --> J["AI as a judge<br/>(rubric, calibrated)"]
+    J --> C["Comparative eval<br/>(pairwise → Elo)"]
+```
+
+**Why it's hard:** open-ended tasks, many valid answers, missing/subjective ground truth,
+benchmark **saturation & contamination**. *Investing in evaluation = investing in reliability.*
+
+**Language-modeling metrics** (cheap, no labels; the pre-training objective):
+
+| Metric | Meaning |
+|--------|---------|
+| **Entropy** | Avg uncertainty of the next token — a property of the data itself |
+| **Cross entropy** | $H(P,Q) = H(P) + D_{KL}(P\parallel Q)$ — training pushes $Q\to P$, floor is $H(P)$ |
+| **BPC / BPB** | Tokenizer-independent (per character / per byte) for fair comparison |
+| **Perplexity** | $2^{H}$ — effective branching factor; **lower = better**; *rises* after alignment; flags contamination (low) & anomalies (high) |
+
+**Exact evaluation** (unambiguous):
+
+| Family | Method |
+|--------|--------|
+| **Functional correctness** | Run it — unit tests / **pass@k**, checkable math, agent success (prefer when possible) |
+| **Similarity to reference** | Exact match → **lexical** (BLEU/ROUGE/METEOR) → **semantic** (cosine, BERTScore) |
+
+**AI as a judge (LLM-as-a-judge):** scales, handles open-ended quality, needs no reference. Prompt
+with task + criteria + scoring system + examples + **chain-of-thought**. Three uses: score one ·
+vs reference · **pairwise** (most reliable). The judge needn't be stronger than the model; options
+are frontier model, self-eval, or a specialized **reward model**. **Biases:** position, verbosity,
+self-bias, inconsistency, drift → mitigate with clear rubrics, order-swapping, self-consistency /
+juries, **human calibration**, pinned versions.
+
+**Comparative evaluation:** aggregate many **pairwise** votes → **Elo** ranking (Chatbot Arena).
+Humans judge *relative* quality better than absolute, and it needs no references — but it's
+subjective, needs many votes, and is **not diagnostic** (says which wins, not why).
+
+| Method | Best for | Watch out for |
+|--------|----------|---------------|
+| Perplexity | Pre-training progress, contamination | Not a usefulness measure |
+| Functional | Code, math, agents | Only where checkable |
+| Similarity | Translation, summarization | Needs good references |
+| AI judge | Open-ended quality | Biases; calibrate to humans |
+| Comparative | Ranking models overall | Subjective; not diagnostic |
+
+**Through-line:** prefer the most objective method your task allows (functional → similarity →
+judge → comparative).
+
+---
+
+## 11.8 Compact glossary
 
 - **Entropy** — average uncertainty of the next token, in bits.
 - **Cross entropy** — how far the model's predicted distribution is from the true one (the

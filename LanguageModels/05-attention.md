@@ -178,4 +178,40 @@ parallel training on GPUs/TPUs, and connects distant words directly.
 
 That architecture is the **Transformer** — the foundation of every model that follows.
 
+---
+
+## 4.9 The one-page recap
+
+```mermaid
+graph LR
+    q["Query<br/>(what I need now)"] --> sc["score vs every Key"]
+    k["Keys / Values<br/>(all encoder states)"] --> sc
+    sc --> sm["softmax → weights α"]
+    sm --> ctx["context cₜ = Σ αₜᵢ·hᵢ"]
+    ctx --> dec["decoder predicts yₜ"]
+```
+
+**Core idea.** A **soft dictionary lookup**. Instead of one frozen $c$, build a **fresh context
+vector per output step** by weighting all encoder states by relevance. Three steps:
+
+$$e_{ti} = \text{score}(s_{t-1}, h_i), \quad \alpha_{ti} = \frac{\exp(e_{ti})}{\sum_j \exp(e_{tj})}, \quad c_t = \sum_i \alpha_{ti}\, h_i$$
+
+| Role | Meaning | In Seq2Seq attention |
+|------|---------|----------------------|
+| **Query** $q$ | What I'm looking for now | Decoder state $s_{t-1}$ |
+| **Key** $k$ | Label used for matching | Each encoder state $h_i$ |
+| **Value** $v$ | Content returned | Each encoder state $h_i$ |
+
+| Aspect | Detail |
+|--------|--------|
+| **Fixes** | Removes the single-vector bottleneck; **dynamic focus**; **interpretable alignment** (heatmap) |
+| **Scoring** | Additive/Bahdanau $v^\top\tanh(W_1 s + W_2 h)$ · Multiplicative/Luong dot $s^\top h$ (fast, parallel) |
+| **Self-attention** | Q, K, V from the **same** sequence → any two positions connected in **one step**, fully parallel, no vanishing over distance |
+| **Still limited by** | Bolted onto **LSTMs** → training still sequential/slow; two mechanisms to build and tune |
+
+**The bridge:** *"Attention Is All You Need"* — if attention relates any two positions directly
+and in parallel, **drop recurrence entirely** → the Transformer.
+
+---
+
 ➡️ Continue to [Chapter 5 — Transformer](06-transformer.md)

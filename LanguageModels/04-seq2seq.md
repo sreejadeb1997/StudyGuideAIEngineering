@@ -143,4 +143,47 @@ When generating "chat", the decoder should be able to pay most of its attention 
 encoder state for "cat". This mechanism — a learned, weighted look-back over the entire
 input — is called **Attention**, and it removes the bottleneck entirely.
 
+---
+
+## 3.7 The one-page recap
+
+```mermaid
+graph LR
+    IN["input sequence"] --> ENC["Encoder RNN"]
+    ENC --> C(("context vector c<br/>= final state h_T"))
+    C --> DEC["Decoder RNN"]
+    DEC --> OUT["output sequence<br/>(different length)"]
+```
+
+**Core idea.** **Separate reading from writing.** An **encoder** LSTM reads the whole input and
+compresses it into one fixed context vector $c = h_T$; a **decoder** LSTM, initialized from $c$,
+generates the output autoregressively until `<eos>`:
+
+$$c = h_T, \quad s_t = \text{LSTM}(s_{t-1}, y_{t-1}), \quad P(y_t \mid y_{<t}, c) = \text{softmax}(Ws_t+b)$$
+
+| Aspect | Detail |
+|--------|--------|
+| **Why it appeared** | Enables **many-to-many, different-length** tasks: translation, summarization, dialogue |
+| **Components** | Encoder · **context vector** · decoder · `<sos>`/`<eos>` · softmax output |
+| **Teacher forcing** | Train by feeding the *true* previous target word (stabilizes, speeds learning) |
+| **Beam search** | Inference: keep top-$k$ partial sequences instead of greedy picks |
+| **Objective** | $L = -\sum_t \log P(y_t \mid y_{<t}, c)$ |
+
+**The fatal flaw — the fixed-vector bottleneck:**
+
+| Limitation | Consequence |
+|------------|-------------|
+| **Information bottleneck** | One vector can't hold a long sentence; quality drops sharply with length |
+| **Recency bias** | $h_T$ remembers the *end* of the input better than the beginning |
+| **No alignment** | Decoder can't point back to *where* a word was in the input |
+| **Still sequential** | Inherits the RNN's non-parallelism |
+
+*(**BLEU** — n-gram overlap vs human references, 0–100, higher better — "fell off a cliff" on long
+sentences, the empirical signature of the bottleneck.)*
+
+**The bridge:** let the decoder look back at **all** encoder states and focus on the relevant
+ones each step → attention.
+
+---
+
 ➡️ Continue to [Chapter 4 — Attention](05-attention.md)

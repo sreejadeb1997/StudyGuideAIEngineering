@@ -193,7 +193,53 @@ As applications grow, prompts become critical assets:
 
 ---
 
-## 13.7 Compact glossary
+## 13.7 The one-page recap
+
+```mermaid
+graph LR
+    A["Anatomy<br/>instruction + context + examples"] --> B["In-context learning<br/>zero / few-shot"]
+    B --> C["Best practices<br/>clarity · decomposition · CoT"]
+    C --> D["Defensive prompting<br/>attacks & layered defenses"]
+    D --> E["Prompt management<br/>version + evaluate"]
+```
+
+**What a prompt is** — up to 3 parts: **task description** (role, format), **example(s)** (few-shot),
+and **the task/context**. **System prompt** (developer, higher priority) vs **user prompt**, joined
+by a **chat template**. Context windows are huge but positions aren't equal — **"lost in the
+middle"** — so put key instructions at the **start/end**.
+
+**In-context learning:** learn behavior from prompt examples with **no weight updates**.
+**Zero-shot** (instruction only) vs **few-shot** (a few demonstrations); few-shot's marginal value
+shrinks as models strengthen but still helps **formatting / edge cases** (costs tokens each call).
+
+| Best practice | Detail |
+|---------------|--------|
+| **Clear instructions** | State persona, audience, constraints, output format; give an **escape hatch** ("say I don't know") |
+| **Sufficient context** | Reduces hallucination; can restrict to provided context (→ RAG) |
+| **Decomposition** | Split into a chain of simpler prompts — easier to monitor/debug/parallelize (→ agents) |
+| **Chain-of-thought** | "Think step by step" — fewer reasoning errors, explainable; + **self-critique** |
+| **Iterate & version** | Track prompts + pinned model versions against evaluation |
+
+**Defensive prompting** (risk *reduction*, not elimination):
+
+| Attack | What it does |
+|--------|--------------|
+| **Jailbreaking** | Bypass the model's safety guardrails |
+| **Prompt injection** | Hidden instructions in ingested content — blast radius grows with tools/agents |
+| **Information extraction** | Leak the system prompt or memorized training data |
+
+Layered defenses: **model** (safety training) · **prompt** (delimiters, ignore user-data
+instructions) · **system** (sandboxing, human approval, filters, least privilege) · anomaly detection.
+
+**Managing prompts:** separate from code, version, pin model versions, catalog metadata, re-test on
+every change (a prompt edit is a behavior change).
+
+**Mindset:** prompting is **communication under rigorous experimentation** — the first, cheapest
+adaptation to try before RAG or finetuning.
+
+---
+
+## 13.8 Compact glossary
 
 - **Prompt** — the input instructing a model; up to three parts: task description, examples,
   the task/context.

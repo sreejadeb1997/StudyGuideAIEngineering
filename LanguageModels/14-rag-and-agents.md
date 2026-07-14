@@ -198,7 +198,52 @@ Memory lets an agent recall earlier facts, maintain state, and learn user prefer
 
 ---
 
-## 14.10 Compact glossary
+## 14.10 The one-page recap
+
+```mermaid
+graph LR
+    Q["Need: current/private knowledge<br/>and the ability to act"] --> R["RAG<br/>retrieve knowledge → context"]
+    Q --> AG["Agents<br/>tools + planning → actions"]
+    R --> G["Grounded, capable,<br/>less-hallucinating answers"]
+    AG --> G
+```
+
+**Unifying idea — context construction:** prompting *arranges* context; RAG and agents *build* it.
+
+**RAG** = **retriever** + generator; quality is dominated by the retriever. Fixes stale/private
+knowledge, hallucination, and context cost.
+
+| Retrieval | Detail |
+|-----------|--------|
+| **Term-based (sparse)** | BM25 / TF-IDF keyword match — fast, exact terms, misses synonyms |
+| **Embedding (dense)** | Vector nearest-neighbor (**ANN**: HNSW/IVF) — captures meaning, needs vector DB |
+| **Hybrid** | Cheap term pass → rerank with embeddings (often best) |
+| **Metrics** | Context **recall / precision**, NDCG / MRR / MAP |
+
+**Retrieval optimization:** **chunking** (biggest knob — size trades context vs precision) ·
+**reranking** (cross-encoder) · query rewriting/expansion · contextual retrieval (augment chunks).
+**Beyond text:** text-to-**SQL**, **knowledge graphs**, the **web**. Long context *complements*
+RAG (relevance still pays; "lost in the middle").
+
+**Agents** = **environment** + **tools (actions)** + **planning**.
+
+| Tool type | Examples |
+|-----------|----------|
+| **Knowledge augmentation** | web search, RAG, SQL, calculator, calendar |
+| **Capability extension** | code interpreter, image generation, converters |
+| **Write actions** | send email, update DB — powerful + dangerous → human approval, least privilege |
+
+**Planning:** decouple plan → (validate) → act → **observe** → **reflect** (ReAct, Reflexion);
+**function calling** runs tools. Failure modes: planning, tool, efficiency. **Compounding errors:**
+$0.95^{10}\approx 60\%$ — more steps, more chances to fail. **Memory:** internal (weights) ·
+short-term (context window) · **long-term** (external vector store).
+
+**Through-line:** both give the model the **right context** — one by retrieving knowledge, the
+other by using tools and planning.
+
+---
+
+## 14.11 Compact glossary
 
 - **RAG** — Retrieval-Augmented Generation: retrieve external info and add it to the prompt.
 - **Retriever / generator** — the component that finds relevant chunks vs the LLM that answers.

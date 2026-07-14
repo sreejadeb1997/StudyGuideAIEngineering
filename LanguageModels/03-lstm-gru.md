@@ -191,4 +191,45 @@ these problems show up in plain terms:
 Every one of these points is exactly what **attention** was invented to fix — by letting the
 decoder look back at *all* encoder states and focus on the relevant ones for each output word.
 
+---
+
+## 2.8 The one-page recap
+
+```mermaid
+graph LR
+    Cprev["C(t-1)"] -->|"× forget fₜ"| add(["+"])
+    cand["candidate C̃ₜ × input iₜ"] --> add
+    add --> Ct["C(t) — protected memory"]
+    Ct -->|"× output oₜ"| ht["h(t)"]
+```
+
+**Core idea.** Instead of overwriting memory each step, keep a **cell state** $C_t$ (a protected
+conveyor belt) and use **gates** to choose what to forget, add, and expose. The key is the
+**additive** update — the *constant error carousel* — which lets gradients flow far without vanishing:
+
+$$C_t = f_t \odot C_{t-1} + i_t \odot \tilde{C}_t, \qquad h_t = o_t \odot \tanh(C_t)$$
+
+| Gate / part | Formula | Role |
+|-------------|---------|------|
+| **Forget** $f_t$ | $\sigma(W_f[h_{t-1},x_t])$ | How much old memory to keep |
+| **Input** $i_t$ | $\sigma(W_i[h_{t-1},x_t])$ | How much new candidate to write |
+| **Candidate** $\tilde{C}_t$ | $\tanh(W_C[h_{t-1},x_t])$ | The proposed new information |
+| **Output** $o_t$ | $\sigma(W_o[h_{t-1},x_t])$ | How much of the cell to expose as $h_t$ |
+
+**GRU** — a lighter variant: **update** + **reset** gates, no separate cell state, fewer params,
+trains faster; $h_t = (1-z_t)\odot h_{t-1} + z_t \odot \tilde{h}_t$. LSTM has more capacity and an
+explicit memory cell; both solve vanishing gradients the same way (gated **additive** updates).
+
+| Still limited by | Consequence |
+|------------------|-------------|
+| **Sequential** | Step $t$ needs $t{-}1$ → can't parallelize across time → slow |
+| **Very long deps fade** | Gates mitigate but don't fully eliminate loss over 100s of steps |
+| **Single fixed state** | Whole past compressed into one vector |
+| **No direct look-back** | Can't "jump back" and re-read a specific past word |
+
+**The bridge:** those limits bite hardest on **sequence-to-sequence** tasks (translation), where
+one summary vector can't hold a whole sentence → Seq2Seq, then attention.
+
+---
+
 ➡️ Continue to [Chapter 3 — Seq2Seq](04-seq2seq.md)

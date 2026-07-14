@@ -175,4 +175,39 @@ autoregressively at scale, then aligned**. The frontier since then has been abou
 each axis of this recipe: more scale (with predictable **scaling laws**), longer context,
 better alignment, multimodality, and efficiency. That is the subject of the final chapter.
 
+---
+
+## 7.9 The one-page recap
+
+```mermaid
+graph LR
+    PT["Pre-train: next-token<br/>prediction (unlabeled text)"] --> SC["Scale → zero/few-shot<br/>in-context learning"]
+    SC --> AL["SFT + RLHF<br/>→ aligned assistant"]
+```
+
+**Core idea.** A stack of Transformer **decoders** with **causal masking** — an **autoregressive**
+next-token generator. Trained on plain next-word prediction (**no labels**), it scales into a
+general, prompt-driven system:
+
+$$L = \sum_t \log P(w_t \mid w_{<t}; \theta), \qquad \text{mask}_{ij} = 0 \text{ if } j\le i \text{ else } -\infty$$
+
+| Aspect | Detail |
+|--------|--------|
+| **Block** | Masked self-attention → add&norm → FFN → add&norm (**no cross-attention**) |
+| **Lineage** | GPT-1 (117M, pretrain+finetune) → GPT-2 (1.5B, **zero-shot**) → GPT-3 (175B, **few-shot**) → GPT-3.5/4 (aligned) |
+| **Sampling** | Greedy · **temperature** · **top-k / top-p (nucleus)** |
+| **Paradigm shift** | **In-context learning**: learn a task from prompt examples, **no weight updates** |
+| **Alignment** | **SFT** (instruction demos) → **reward model** (preference ranking) → **RLHF / PPO** |
+
+| Limitation | Detail |
+|------------|--------|
+| **Hallucination** | Fluent next-token predictor can be confidently false |
+| **Unidirectional** | Only left context per position |
+| **$O(n^2)$ + finite context** · **huge cost** · **static knowledge** | Frozen unless augmented (RAG/tools); no guaranteed reasoning |
+
+**The recipe that defined the era:** a decoder-only Transformer, pre-trained autoregressively at
+scale, then aligned. The frontier just pushes each axis further → Beyond.
+
+---
+
 ➡️ Continue to [Chapter 8 — Beyond](09-beyond.md)

@@ -468,7 +468,58 @@ the eval data, rubric, and the judge's prompt and sampling config.
 
 ---
 
-## 12.7 Compact glossary
+## 12.7 The one-page recap
+
+```mermaid
+graph LR
+    CR["Define criteria<br/>domain · generation · instruction · cost"] --> SEL["Model selection<br/>filter → benchmarks → experiment → monitor"]
+    SEL --> BM["Navigate public benchmarks<br/>(saturation & contamination)"]
+    BM --> PIPE["Design your own pipeline<br/>components · guideline · methods+data"]
+```
+
+**Evaluation-driven development:** define criteria **before** building. Evaluation is the biggest
+bottleneck to AI adoption (the "lamppost" problem — don't only build the measurable).
+
+**Four criteria buckets** — given a criterion, which methods measure it:
+
+| Criterion | How to evaluate |
+|-----------|-----------------|
+| **Domain capability** | Close-ended **MCQs** (accuracy vs random baseline); functional correctness for code |
+| **Generation — factual consistency** | **Local** (vs given context) easy; **global** (vs world) hard — AI judge, **SelfCheckGPT**, **SAFE**, **NLI** entailment (TruthfulQA) |
+| **Generation — safety** | Toxicity/bias via specialized classifiers or AI judges (RealToxicityPrompts, BOLD) |
+| **Instruction-following** | **IFEval** (programmatic format) · **INFOBench** (yes/no criteria) · roleplaying |
+| **Cost & latency** | TTFT, time/token, per-query; API per-token vs self-host compute |
+
+**Model selection** (iterative four-step workflow):
+
+| Step | Detail |
+|------|--------|
+| 1 Filter | **Hard attributes** (license, size, privacy, host vs API) shrink the pool |
+| 2 Narrow | Public benchmarks & leaderboards |
+| 3 Experiment | Your own evaluation pipeline |
+| 4 Monitor | Production failures + feedback (iterate) |
+
+**Build vs buy:** self-host (control, **logprobs**, privacy, freeze versions) vs API (best models,
+easy scale, functionality). Check the **license** (commercial use? train on outputs? — data
+lineage). **Open weight** (weights public) vs **open model** (weights + data).
+
+**Public benchmarks:** a leaderboard = chosen benchmarks + aggregation (average vs mean-win-rate);
+drop **correlated** ones. **Data contamination** (test leaking into training) inflates scores —
+detect via n-gram overlap or low perplexity. Benchmarks **filter out bad models** but won't find
+*yours*.
+
+**Design your pipeline (3 steps):** (1) evaluate **every component** + turn- and task-based;
+(2) write a clear **guideline + rubric with examples**, tie scores to **business metrics**;
+(3) pick **methods + data**, annotate, **slice** (avoid Simpson's paradox), size with
+bootstrapping (a **3× smaller** difference needs **10× more** samples). Then evaluate the pipeline
+itself and iterate.
+
+**Through-line:** a model is only good **for your application** — evaluate in context, not in the
+abstract.
+
+---
+
+## 12.8 Compact glossary
 
 - **Evaluation-driven development** — defining evaluation criteria *before* building.
 - **Domain-specific capability** — what the model can do in a domain (code, math, a language),

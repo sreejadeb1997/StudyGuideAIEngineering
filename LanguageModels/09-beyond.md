@@ -124,7 +124,44 @@ comes next.
 
 ---
 
-## 8.7 A compact glossary
+## 8.7 The one-page recap
+
+```mermaid
+graph TB
+    TR["Transformer (2017)"] --> E["Encoder-only<br/>BERT → understanding"]
+    TR --> D["Decoder-only<br/>GPT → generation"]
+    TR --> ED["Encoder–decoder<br/>T5 / BART → seq2seq"]
+    D --> LLM["Scaling laws + refinements<br/>(RoPE, GQA, MoE, FlashAttention)"]
+    LLM --> AL["Instruction tuning + RLHF<br/>→ aligned assistants"]
+```
+
+**Three Transformer families** — every large model is one of these configurations:
+
+| Family | Attention | Best at | Examples |
+|--------|-----------|---------|----------|
+| **Encoder-only** | Bidirectional | Understanding (classification, NER, retrieval) | BERT, RoBERTa, DeBERTa |
+| **Decoder-only** | Causal | Generation, prompting (dominant today) | GPT, LLaMA, Mistral, Claude, Gemini |
+| **Encoder–decoder** | Bi + cross | Seq2seq (translation, summarization) | T5, BART |
+
+**Key ideas after BERT/GPT:** RoBERTa (better-trained BERT, NSP dropped) · **T5** (everything
+text→text) · BART (denoising autoencoder) · GPT-3 (few-shot) · **scaling laws / Chinchilla**
+(most models under-trained on data; ~20 tokens/param) · InstructGPT/ChatGPT (RLHF) ·
+LLaMA/Mistral/Falcon (efficient open weights) · GPT-4/Claude/Gemini (multimodal, long context).
+
+**Architectural refinements:** **RoPE** (positions) · **RMSNorm** · **SwiGLU/GeGLU** (FFN) ·
+**GQA** (smaller KV cache) · **FlashAttention** (memory-efficient exact attention) · **MoE**
+(sparse experts — more capacity at similar compute).
+
+**Tackling the $O(n^2)$ barrier:** sparse/efficient attention (Longformer, BigBird) ·
+linear/state-space models (Mamba) · **RAG** (retrieve into context).
+
+**The recurring pattern:** each leap **isolates one structural limitation** of the prior model
+and redesigns exactly that part, keeping what worked — n-gram → NNLM → RNN → LSTM → Seq2Seq →
+Attention → Transformer → BERT/GPT → aligned LLMs.
+
+---
+
+## 8.8 A compact glossary
 
 - **Autoregressive** — generates output one token at a time, each conditioned on the
   previous ones.

@@ -155,7 +155,53 @@ set that make the next version better — the entire book's techniques, running 
 
 ---
 
-## 18.4 Compact glossary
+## 18.4 The one-page recap
+
+```mermaid
+graph LR
+    A["Model API + prompt"] --> B["+ context (RAG/tools)"]
+    B --> C["+ guardrails"]
+    C --> D["+ router & gateway"]
+    D --> E["+ caching"]
+    E --> F["+ observability<br/>+ feedback loop"]
+    F -.data flywheel.-> A
+```
+
+**Build incrementally** — start with the simplest thing that works, add each box **only when a real
+problem demands it**.
+
+| Layer | Detail |
+|-------|--------|
+| **Enhance context** | RAG (knowledge) + tools (actions) — highest-value first addition |
+| **Guardrails** | **Input** (PII, prompt-injection/jailbreak filters) + **output** (toxicity, hallucination, format); inline vs async; mind **streaming** |
+| **Router** | Intent classifier → cheap model for easy queries, strong for hard (cost ↓, quality ↑) |
+| **Gateway** | Unified interface: access control, keys, rate limits, fallbacks, logging, cost, **provider swaps** |
+| **Caching** | Exact/prompt · **semantic** (embeddings; tune threshold) · KV/prefix — cuts cost & latency, risks **staleness** |
+| **Agent patterns** | Multi-step tool use with write-action safeguards + human-in-the-loop |
+
+**Observability** (cross-cutting): **metrics** (quality, latency, cost, KPIs) + **logs** +
+**traces** (follow a request through every component to pinpoint failures). An **orchestrator**
+(LangChain / LlamaIndex / in-house) wires it together — mind dependency & abstraction overhead.
+
+**User feedback — the product's moat:**
+
+| Type | Examples |
+|------|----------|
+| **Explicit** | thumbs, ratings, regenerate, bug reports, corrections (clear but **sparse/biased**) |
+| **Implicit** | copy/accept, edit, follow-up, abandon, session length (**abundant/honest** but ambiguous) |
+
+Collect at **natural, low-friction** moments; corrections double as high-quality training data.
+Beware **degenerate feedback loops** (the model shapes behavior that then reinforces its bias) and
+position/presentation bias.
+
+**Closing the loop (data flywheel):** feedback → evaluate & find failures (Mod 11–12) → curate
+data (Mod 16) → improve prompts / RAG / finetune (Mod 13–15) → better product → more feedback.
+
+**Through-line:** assemble the techniques into a system, then let feedback continuously improve it.
+
+---
+
+## 18.5 Compact glossary
 
 - **Context construction** — enhancing a model call with RAG and tools (Module 14).
 - **Input / output guardrails** — safety checks on what goes into and comes out of the model.
