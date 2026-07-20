@@ -1,4 +1,4 @@
-# Language Models & AI Engineering — Concept Cheat Sheet
+# Language Models & AI Engineering — Cheat Sheet
 
 
 ---
