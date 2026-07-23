@@ -299,11 +299,16 @@
 - **Why expensive — memory math**
   - Need weights + gradients + optimizer state (adaptive optimizers store extra per-parameter values) + activations ≈ 3–4× the weights.
   - Precision reduces bytes per value (32→16→8→4 bit) → lower precision (quantization) shrinks all of these.
-- **Parameter-efficient finetuning** (train a small subset, freeze the base)
-  - **Low-rank adaptation** — freeze the big weight matrix, learn a small low-rank update; <1% of parameters; mergeable back in → no inference latency; cheap, swappable adapters.
-  - Combine low-rank adaptation with a quantized frozen base → finetune very large models on a single GPU.
-  - Learn continuous "virtual token" vectors instead of editing weights.
-- **Model merging / task arithmetic** — average weights, or add/subtract (finetuned − base) skill directions, or stack layers to compose or remove skills without full retraining.
+- **Parameter-efficient finetuning (PEFT)** — freeze the huge base model and train only a **tiny set of parameters** (a small subset of existing weights, or a few *added* ones). Cuts memory/storage massively while keeping most of full-finetuning's quality (you skip storing gradients + optimizer state for the frozen part). Three main families:
+  - **Low-rank adaptation (LoRA)** — the dominant method. *How*: freeze the original weight matrix $W$; learn a low-rank update $W' = W + \frac{\alpha}{r}BA$ where $A,B$ are skinny **rank-$r$** matrices ($r \ll$ matrix dim) — only $A,B$ are trained.
+    - **Pick where**: apply to the attention projection matrices ($Q,K,V,O$); optionally the feedforward layers.
+    - **Pick rank $r$**: capacity dial — $r\approx$ 8–64 is usually enough; higher $r$ = more capacity + memory. Scale with $\alpha$.
+    - **Why it wins**: **<1%** of params (fits one GPU) · adapters are a few MB → keep **one frozen base + swap many task adapters** (multi-tenant serving) · **mergeable** back into $W$ (just addition) → **no inference latency**.
+  - **Soft prompts / prefix tuning** — *How*: leave all weights frozen and instead **learn continuous "virtual token" vectors** that get prepended to the input; the model adapts via these learned embeddings rather than any weight edit. Cheapest, but usually lower capacity than LoRA.
+- **Model merging / task arithmetic** — combine several finetuned models (or adapters) into one **without retraining from scratch**; great for multi-task and on-device models. Three ways to do it:
+  - **Weight averaging (souping)** — *How*: take several models finetuned from the **same base** and average their weights element-wise → one model that blends their strengths.
+  - **Task vectors (task arithmetic)** — *How*: compute $(\text{finetuned} - \text{base})$ = a "skill direction" vector; **add** it to inject a skill, **subtract** it to remove/unlearn a behavior, or combine several to compose skills.
+  - **Layer stacking (frankenmerging)** — *How*: assemble layers taken from **different** models into a new deeper network to compose capabilities.
 - **Workflow**: define task/metrics → curate data → pick base + method → set hyperparameters (learning rate matters most; too many epochs → overfitting; batch size; adapter rank) → train → evaluate → iterate. Data quality beats quantity.
 
 ---
