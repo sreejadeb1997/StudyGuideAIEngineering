@@ -1,0 +1,382 @@
+# Problem Statement
+
+Create a harness for my repo in a generic manner that does these below things
+- get the context from a repo, knowledge documents
+- read a spec document for the implementation of a new feature
+- read the data/design source (source schema, sample-data profile, dashboard mock)
+- answer clarifying questions for the spec/design from human in the loop
+- create a technical design
+- review and approve the technical design from human in the loop
+- implement the features - code creation
+- publish PR, suggest test coverage, and review from human in the loop 
+- retrospect, next improvement
+
+---
+
+# Design: A GitHub Copilot Harness for a Data Engineering / Data Science Repo
+
+## What this is
+
+A **hybrid of two cooperating planes**. GitHub Copilot — running as a custom agent
+inside Visual Studio Code — is the **execution plane** that does the coding.
+Microsoft Agent Framework — a Python or .NET process running outside the editor —
+is the **governance plane** that observes, evaluates, and guards that work.
+GitHub Copilot cannot be driven *as* an application programming interface, and
+Microsoft Agent Framework cannot type in your editor, so each owns the half it is
+good at. They meet at shared, file-based artifacts in the repository.
+
+| Plane | Runs where | Owns |
+|---|---|---|
+| **Execution plane** — GitHub Copilot | Custom agent inside Visual Studio Code | Reads context, asks clarifying questions, writes the technical design, implements the code, opens the pull request. |
+| **Governance plane** — Microsoft Agent Framework | Python or .NET process outside the editor | OpenTelemetry tracing, automated evaluation of the design and tests, and middleware that redacts secrets and personally identifiable information. |
+
+```mermaid
+flowchart LR
+    subgraph EX[Execution plane -- GitHub Copilot in Visual Studio Code]
+        AG[data-feature.agent.md] <-->|AskUserQuestion| HU[Human]
+    end
+    subgraph GOV[Governance plane -- Microsoft Agent Framework]
+        MW[Middleware: secret / PII redaction]
+        OT[OpenTelemetry tracing]
+        EV[Evaluation: design + tests]
+        CP[Context providers / retrieval-augmented generation]
+    end
+    FILES[[Shared files: copilot-instructions.md, contracts/, docs/]]
+    AG --- FILES
+    CP --> FILES
+    GOV -.observes.- EX
+```
+
+## The only files you need
+
+The **entire harness folder structure lives inside the implementation repository
+itself** (same repo, in-place) — there is no separate harness repo. GitHub Copilot
+and every change it makes operate on that same working tree, and
+`.github/copilot-instructions.md` holds the **reference/map to that repo**.
+
+| File | Purpose |
+|---|---|
+| `.github/copilot-instructions.md` | Always-on **reference to the repository itself**: the folder map, where implementation changes go, build / test commands, coding conventions, and where the data contracts live. GitHub Copilot reads this automatically on every request. |
+| `contracts/` | The source of truth, in YAML: table and column **schemas**, **metric definitions**, and freshness / ownership service-level agreements. |
+| `.github/agents/data-feature.agent.md` | One GitHub Copilot custom agent that runs all nine steps and stops at the human approval gates. |
+| `docs/specs/<feature>.md` | Input: the feature or metric request you hand to the agent. |
+| `docs/design/<feature>.md` | Output of step 5: the technical design (written from a short template). |
+| `docs/progress/<feature>.md` | A plain Markdown checklist the agent keeps up to date so any session can resume where it left off. |
+
+That is the execution-plane harness. Everything else — multiple agents, a
+validator runner, a state-machine file — is optional. The Microsoft Agent
+Framework governance plane (described below) is the second half of the hybrid.
+
+## How the nine steps run
+
+One agent, three human approval gates. The agent uses the `AskUserQuestion` tool
+at each gate so choices are explicit named options, never a free-text "Proceed?".
+
+```mermaid
+flowchart TD
+    A[1. Read context<br/>copilot-instructions.md + contracts/] --> B[2. Read spec<br/>docs/specs/feature.md]
+    B --> C[3. Read schema + profile sample data]
+    C --> D{4. Clarifying questions<br/>HUMAN APPROVES}
+    D --> E[5. Write technical design<br/>docs/design/feature.md]
+    E --> F{6. Review design<br/>HUMAN APPROVES}
+    F -->|changes| E
+    F -->|approved| G[7. Implement<br/>Synapse / Databricks / Fabric notebooks + pipelines]
+    G --> H{8. Open pull request + tests<br/>HUMAN APPROVES}
+    H -->|changes| G
+    H -->|approved| I[9. Retrospective<br/>note improvements, pick next]
+    I -.next feature.-> A
+```
+
+| Step | What the agent does | Human gate |
+|---|---|---|
+| 1. Get context | Reads `.github/copilot-instructions.md`, the `contracts/` folder, and any knowledge documents in the repository. | — |
+| 2. Read spec | Reads `docs/specs/<feature>.md`. | — |
+| 3. Read data / design source | Reads the source and target **table schemas** and runs a quick **data profile** (row counts, null percentage, value distributions, cardinality). Uses a dashboard mock if one exists. | — |
+| 4. Clarifying questions | Asks about **grain**, **slowly changing dimension type**, **backfill window**, and **personally identifiable information** handling. | ✅ human answers |
+| 5. Technical design | Writes `docs/design/<feature>.md`: target tables, transformation logic, and the data-quality tests to add. | — |
+| 6. Approve design | — | ✅ human approves or requests changes |
+| 7. Implement | Writes the code: **Microsoft Fabric**, **Azure Synapse Analytics**, or **Azure Databricks** notebooks and pipelines, and the supporting Spark / SQL and orchestration assets. | — |
+| 8. Pull request + tests | Opens a **pull request** and adds tests — **dbt tests** or **Great Expectations** checks, a schema-contract check, and an **idempotent backfill dry run**. | ✅ human reviews before merge |
+| 9. Retrospective | Records what to improve (runtime, cost / bytes scanned, data freshness) and proposes the next feature. | — |
+
+## Human-in-the-loop, kept simple
+
+Only three gates matter: **clarifying questions (step 4)**, **design approval
+(step 6)**, and **pull-request review (step 8)**. At each gate the agent uses the
+`AskUserQuestion` tool with a few named options and waits. Between gates it works
+on its own and keeps `docs/progress/<feature>.md` current.
+
+## The governance plane: where Microsoft Agent Framework fits
+
+Think of Microsoft Agent Framework as the **supervisor that sits outside your
+editor**. GitHub Copilot writes the code; this plane watches, checks, and controls
+the model calls that happen *away* from the editor.
+
+- **What it is** — a small Python program you run separately (`pip install
+  agent-framework`). It is not a Visual Studio Code extension.
+- **What it touches** — only the *non-editor* model calls: analyzing the spec,
+  scoring the design, running the retrospective. It never types in your editor.
+- **Why it matters** — it is where you put the rules you cannot enforce from
+  inside GitHub Copilot: redaction, tracing, evaluation gates, and shared tools.
+
+Each capability below is explained in plain language, then shown with the exact
+Microsoft Agent Framework code that implements it.
+
+### 1. Middleware — redact secrets / PII and log every model call
+
+- **The idea** — middleware is code that runs *around* every model call, like a
+  security checkpoint at an airport gate: nothing reaches the model without
+  passing through it.
+- **Two kinds you use here:**
+  - **Agent middleware** — runs once per request, *before* the model. Use it to
+    **block** a request outright (for example, one that leaks a password).
+  - **Chat middleware** — runs on *every* individual model call. Use it to
+    **log** or **scrub** the messages that are sent.
+- **In the code below:**
+  - `block_secrets` checks the last message; if it finds a credential it sets a
+    canned reply and returns *without* calling `call_next()`, so the model is
+    never contacted.
+  - `log_calls` prints before and after each model call.
+  - Both are registered once via `middleware=[...]`, so they apply to every run.
+
+```python
+import re
+from collections.abc import Awaitable, Callable
+
+from agent_framework import (
+    Agent, AgentContext, AgentResponse, ChatContext, Message,
+    agent_middleware, chat_middleware,
+)
+from agent_framework.foundry import FoundryChatClient
+from azure.identity.aio import AzureCliCredential
+
+SECRET = re.compile(r"(?i)(password|secret|token|api[_-]?key)\s*[:=]\s*\S+")
+
+@agent_middleware
+async def block_secrets(context: AgentContext, call_next: Callable[[], Awaitable[None]]) -> None:
+    last = context.messages[-1] if context.messages else None
+    if last and last.text and SECRET.search(last.text):
+        # Set the result and skip call_next() -> the model is never called.
+        context.result = AgentResponse(
+            messages=[Message("assistant", ["Blocked: request contained a secret."])]
+        )
+        return
+    await call_next()
+
+@chat_middleware
+async def log_calls(context: ChatContext, call_next: Callable[[], Awaitable[None]]) -> None:
+    print(f"[governance] sending {len(context.messages)} messages to the model")
+    await call_next()
+    print("[governance] model responded")
+
+async def main() -> None:
+    async with AzureCliCredential() as credential:
+        async with Agent(
+            client=FoundryChatClient(credential=credential),
+            name="SpecReviewer",
+            instructions="Analyze the feature spec and list the gaps.",
+            middleware=[block_secrets, log_calls],   # applies to every run
+        ) as agent:
+            print((await agent.run("Review docs/specs/feature.md")).text)
+```
+
+### 2. OpenTelemetry — trace the whole lifecycle
+
+- **The idea** — OpenTelemetry is the industry-standard way to record *what
+  happened and how long it took*. Each recorded step is called a **span**.
+- **What you get for free** — Microsoft Agent Framework already emits spans for
+  every agent run and tool call, following the generative-AI naming conventions,
+  so they appear in any backend (Azure Monitor, Jaeger) with no extra code.
+- **What the code adds** — a one-time exporter setup (where the spans are sent),
+  plus a custom span around each model call so you can line governance activity up
+  against GitHub Copilot's own run logs.
+- **Why it matters** — when a run misbehaves you can see the whole lifecycle in
+  one trace instead of guessing from scattered logs.
+
+```python
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from agent_framework import ChatContext, chat_middleware
+
+trace.set_tracer_provider(TracerProvider())
+trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+tracer = trace.get_tracer("data-harness.governance")
+
+@chat_middleware
+async def trace_calls(context: ChatContext, call_next) -> None:
+    with tracer.start_as_current_span("gen_ai.model.call") as span:
+        span.set_attribute("gen_ai.request.message_count", len(context.messages))
+        await call_next()
+```
+
+### 3. Context providers (retrieval-augmented generation) — refresh the instructions file
+
+- **The problem** — `.github/copilot-instructions.md` goes stale the moment a
+  table schema or column changes, and stale context makes GitHub Copilot write
+  wrong code.
+- **The fix (retrieval-augmented generation)** — instead of editing that file by
+  hand, the governance plane *retrieves* the current facts and *regenerates* the
+  file automatically:
+  1. **Retrieve** — a vector search returns the most relevant, up-to-date schema
+     and lineage facts from the data catalog and `contracts/` (`catalog_snippets`).
+  2. **Generate** — a small agent turns those facts into a concise instructions
+     file.
+  3. **Write** — the result overwrites `.github/copilot-instructions.md`.
+- **When to run it** — on a schedule, or whenever a data contract changes, so
+  GitHub Copilot always reads the latest ground truth.
+- **In-run memory (optional)** — to inject context *during* an agent run instead
+  of into a file, attach a provider with the `context_providers=[...]` argument.
+
+```python
+from pathlib import Path
+from agent_framework import Agent
+from agent_framework.foundry import FoundryChatClient
+from azure.identity.aio import AzureCliCredential
+
+async def refresh_copilot_instructions(catalog_snippets: list[str]) -> None:
+    """catalog_snippets = top-k results from your vector search over catalog + contracts/."""
+    async with AzureCliCredential() as credential:
+        async with Agent(
+            client=FoundryChatClient(credential=credential),
+            name="ContextWriter",
+            instructions=(
+                "Write a concise .github/copilot-instructions.md: repo map, where "
+                "changes go, build / test commands, and data-contract locations."
+            ),
+        ) as agent:
+            facts = "\n\n".join(catalog_snippets)
+            md = await agent.run(f"Source facts:\n{facts}")
+            Path(".github/copilot-instructions.md").write_text(md.text, encoding="utf-8")
+```
+
+### 4. Evaluation — score the design and tests, then gate the pull request
+
+- **The idea** — an "**LLM-as-judge**": one agent grades the work of another
+  against a rubric and returns a machine-readable score you can act on.
+- **What it checks:**
+  - the technical design against the **data contracts** — did it cover every
+    required table, column, and metric? — and
+  - the **data-quality tests** for adequate coverage. These are assertions about
+    the data itself (no nulls, values in range, keys unique, row counts within
+    tolerance) written with **Great Expectations** — an open-source Python library
+    for data-quality testing, the "unit tests" of a data pipeline — or with
+    **Microsoft Fabric / Azure Synapse** built-in data-quality rules.
+- **What it returns** — strict JSON: `{"pass": bool, "missing": [...],
+  "coverage": 0.0-1.0}`, so no human has to read it to decide.
+- **How you use it (the gate)** — if `pass` is `false`, the pipeline stops before
+  the pull request opens (`raise SystemExit`). This turns a subjective review into
+  an automatic quality gate.
+
+```python
+import json
+from agent_framework import Agent
+from agent_framework.foundry import FoundryChatClient
+from azure.identity.aio import AzureCliCredential
+
+async def evaluate_design(design_md: str, contracts_yaml: str) -> dict:
+    async with AzureCliCredential() as credential:
+        async with Agent(
+            client=FoundryChatClient(credential=credential),
+            name="DesignJudge",
+            instructions=(
+                "Score the design against the data contracts. Return only JSON: "
+                '{"pass": bool, "missing": [str], "coverage": 0.0-1.0}.'
+            ),
+        ) as agent:
+            result = await agent.run(f"DESIGN:\n{design_md}\n\nCONTRACTS:\n{contracts_yaml}")
+            return json.loads(result.text)
+
+verdict = await evaluate_design(design_md, contracts_yaml)
+if not verdict["pass"]:
+    raise SystemExit(f"Design gate failed — missing: {verdict['missing']}")
+```
+
+### 5. Workflows with checkpointing — optional unattended driver
+
+- **When to use it** — only if you want the nine steps to run **unattended** (for
+  example, kicked off by a continuous-integration pipeline) instead of a person
+  driving GitHub Copilot in the editor. For interactive work you do **not** need
+  this.
+- **The building blocks:**
+  - **Step / executor** — one unit of work (for example, "create design").
+  - **Human gate** — `ctx.request_info()` pauses the run and waits for a person's
+    answer, then continues. Same approval idea as `AskUserQuestion`, but for an
+    unattended run.
+  - **Checkpoint** — the run's state is saved at each step boundary, so a job that
+    pauses for approval can **resume days later** exactly where it stopped.
+- **Two ways to write it** — the sketch below uses the simpler **Functional
+  Workflow API** (`@workflow` / `@step`). The **graph API** is the same idea with
+  `WorkflowBuilder`, a `RequestInfoExecutor` for the gates, and superstep-boundary
+  checkpoints. (Check the Workflows docs for exact signatures.)
+
+```python
+# Functional Workflow API (Python). Human gates use ctx.request_info();
+# checkpointing lets an unattended run pause and resume. See the Workflows docs
+# for exact signatures.
+from agent_framework import workflow, step, WorkflowContext
+
+@step
+async def create_design(ctx: WorkflowContext, spec: str) -> str:
+    ...  # call the design agent; return the technical-design markdown
+
+@step
+async def approve_design(ctx: WorkflowContext, design: str) -> str:
+    decision = await ctx.request_info(prompt=f"Approve this design?\n{design}")  # HITL pause
+    return design if decision == "approved" else await create_design(ctx, design)
+
+@workflow(checkpointing=True)
+async def feature_flow(ctx: WorkflowContext, spec: str) -> str:
+    design = await create_design(ctx, spec)
+    return await approve_design(ctx, design)
+```
+
+### 6. Model Context Protocol clients — one shared tool layer
+
+- **What MCP is** — Model Context Protocol is a standard way for an agent to talk
+  to an outside system (GitHub, a data warehouse) through a small "server" that
+  exposes tools. Think of it as a **universal adapter** for tools.
+- **Why it matters here** — the *same* GitHub MCP server that GitHub Copilot uses
+  is also usable by your governance agents, so both planes share one tool layer
+  instead of each re-implementing GitHub access.
+- **How the code wires it up:**
+  - `client.get_mcp_tool(...)` attaches a hosted MCP server by URL.
+  - `headers` carries the authentication token (kept in an environment variable,
+    never hard-coded).
+  - `approval_mode="always_require"` forces a human to sign off before any risky
+    write, such as opening a pull request or posting a comment.
+
+```python
+import os
+from agent_framework import Agent
+from agent_framework.openai import OpenAIChatClient
+
+client = OpenAIChatClient()
+github_mcp = client.get_mcp_tool(
+    name="GitHub",
+    url="https://api.githubcopilot.com/mcp/",
+    headers={"Authorization": f"Bearer {os.environ['GITHUB_PAT']}"},
+    approval_mode="always_require",   # require sign-off before writes (PR, comments)
+)
+
+async with Agent(
+    client=client,
+    name="PRGovernor",
+    instructions="Open and annotate the pull request for the approved slice.",
+    tools=[github_mcp],
+) as agent:
+    print((await agent.run("Open a draft PR for feature/x and suggest test coverage")).text)
+```
+
+- **Data-stack tools** — for the Microsoft data stack, a **Microsoft Fabric data
+  agent** tool is also available through the Foundry provider (preview) to query
+  the lakehouse, alongside the GitHub, warehouse (Microsoft Fabric, Azure Synapse
+  Analytics, Azure Databricks), and data-catalog (Microsoft Purview) servers
+  shared across both planes.
+
+## Optional (add only when you need it)
+
+- **Splitting the one agent into three** (a supervisor, an implementer, a
+  reviewer) only if single-agent runs become too large.
+- **A validator script** that lints the harness files, once you have several.
